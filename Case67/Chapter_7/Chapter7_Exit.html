@@ -137,6 +137,7 @@
         progress.chapters = progress.chapters || {};
         progress.characters = progress.characters || {};
         progress.chapters["7"] = "UNLOCKED";
+        progress.completed = true;
         localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(progress));
         saveStatus.textContent = "";
         return true;

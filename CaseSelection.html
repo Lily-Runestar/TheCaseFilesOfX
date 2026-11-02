@@ -59,11 +59,11 @@
         button.textContent = folder.replace(/^Case/, "CASE ");
         button.addEventListener("click", () => {
           settings.difficulty = difficulty;
-          savePlayerSettings(settings);
           settings.hell = hellMode;
           savePlayerSettings(settings);
           const startingHealth = hellMode ? 1 : { easy: 5, medium: 4, hard: 3 }[difficulty];
-          window.location.href = `${folder}/index.html?hp=${startingHealth}`;
+          const destination = hellMode ? folder.replace(/^Case/, "Hell") : folder;
+          window.location.href = `${destination}/index.html${hellMode ? "" : `?hp=${startingHealth}`}`;
         });
         casesElement.appendChild(button);
       });
@@ -74,23 +74,28 @@
         difficulty = button.dataset.difficulty;
         document.querySelectorAll("[data-difficulty]").forEach((item) => item.classList.toggle("selected", item === button));
       });
-      function isCase67Complete() {
-        try {
-          const progress = JSON.parse(localStorage.getItem("sixtySevenProgress") || "{}");
-          return progress.chapters && progress.chapters["7"] === "UNLOCKED";
-        } catch (error) {
-          return false;
-        }
-      }
-      const hellButton = document.getElementById("hell-mode");
-      hellButton.disabled = !isCase67Complete();
-      hellButton.title = isCase67Complete() ? "Enable Hell mode for every case" : "Complete Case 67 to unlock Hell mode";
-      hellButton.classList.toggle("selected", hellMode);
-      hellButton.addEventListener("click", () => {
-        hellMode = !hellMode;
-        hellButton.classList.toggle("selected", hellMode);
-      });
       button.classList.toggle("selected", button.dataset.difficulty === difficulty);
+    });
+
+    function isCase67Complete() {
+      try {
+        const progress = JSON.parse(localStorage.getItem("sixtySevenProgress") || "{}");
+        return progress.completed === true ||
+          (progress.chapters && progress.chapters["7"] === "UNLOCKED");
+      } catch (error) {
+        console.warn("Case 67 progress could not be read.", error);
+        return false;
+      }
+    }
+
+    const hellButton = document.getElementById("hell-mode");
+    const case67Complete = isCase67Complete();
+    hellButton.disabled = !case67Complete;
+    hellButton.title = case67Complete ? "Enable Hell mode for every case" : "Complete Case 67 to unlock Hell mode";
+    hellButton.classList.toggle("selected", hellMode);
+    hellButton.addEventListener("click", () => {
+      hellMode = !hellMode;
+      hellButton.classList.toggle("selected", hellMode);
     });
     discoverCases().then(renderCases);
   </script>
