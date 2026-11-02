@@ -11,7 +11,7 @@
     button,a.back{color:#fff;background:#292929;border:1px solid #777;padding:10px;cursor:pointer;text-decoration:none}
     .top{display:flex;justify-content:space-between;align-items:center}.capturing{background:#777;color:#111}
     p{min-height:24px;text-align:center;color:#ccc}
-    #reset-progress{position:fixed;left:50%;bottom:16px;transform:translateX(-50%)}
+    #reset-progress{display:block;margin:32px auto 16px;padding:12px 18px}
   </style>
 </head>
 <body>
@@ -19,8 +19,8 @@
     <div class="top"><a class="back" href="index.html">BACK</a><h1>CONTROLS</h1><button id="reset">RESET</button></div>
     <div id="bindings"></div>
     <p id="status" aria-live="polite">Choose a control, then press any key.</p>
+    <button id="reset-progress" type="button">RESET PROGRESS</button>
   </main>
-  <button id="reset-progress" type="button">RESET PROGRESS</button>
   <script src="player controls/player-controls.js"></script>
   <script>
     const bindingsElement = document.getElementById("bindings");
