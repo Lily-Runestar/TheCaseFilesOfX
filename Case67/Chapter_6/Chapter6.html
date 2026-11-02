@@ -82,6 +82,7 @@ body{display:flex;align-items:center;justify-content:center}
 
 </main>
 
+<script src="../../player controls/player-controls.js"></script>
 <script>
 
 const AVAILABLE_NUMBERS=[-1,1,2,3,4,5];
@@ -99,7 +100,7 @@ const ANIMATIONS={STILL:["Still"],WALK:["Still","WalkF1","WalkF2","WalkF1","Walk
 let currentAnimation="STILL",animationFrame=0,animationTimer=0,actionLocked=false,attacking=false;
 let fallFlip=1;
 
-const PLAYER_SPEED=320,JUMP_POWER=798.4,NUMBER_4_JUMP_POWER=1050,GRAVITY=1900,PLAYER_W=44,PLAYER_H=78,GROUND_H=145,PLAYER_SCALE=0.56;
+const PLAYER_SPEED=PLAYER_PROFILE.speed,JUMP_POWER=PLAYER_PROFILE.jumpPower,NUMBER_4_JUMP_POWER=PLAYER_PROFILE.number4JumpPower,GRAVITY=PLAYER_PROFILE.gravity,PLAYER_W=PLAYER_PROFILE.width,PLAYER_H=PLAYER_PROFILE.height,PLAYER_SCALE=PLAYER_PROFILE.scale,GROUND_H=145;
 
 let playerX=100,playerY=0,velocityX=0,velocityY=0,onGround=true,facing=1,cameraX=0,hearts=3,lastTime=performance.now(),invulnerable=0,won=false,dashTime=0,dashDirection=1,projectile=null;
 
@@ -515,7 +516,7 @@ function UPDATE_PLAYER(dt){
 
 function GAME_LOOP(time){if(battleFinished)return;const ms=time-lastTime;lastTime=time;const dt=Math.min(ms/1000,.04);updateBattle(dt);if(battleFinished)return;UPDATE_PLAYER(dt);UPDATE_ANIMATION(ms);if(!battleFinished)requestAnimationFrame(GAME_LOOP)}
 
-function LOAD_KEY_BINDINGS(){const defaults={left:"a",right:"d",jump:"w",attack:" ",previous:"q",next:"e",summon:"s"};try{const saved=JSON.parse(localStorage.getItem("sixtySevenKeyBindings")||"{}");for(const action in defaults){if(typeof saved[action]==="string"&&(saved[action].length===1||saved[action]===" "))defaults[action]=saved[action].toLowerCase()}return defaults}catch(error){console.warn("Key bindings could not be loaded; using defaults.",error);return defaults}}
+function LOAD_KEY_BINDINGS(){return loadPlayerBindings()}
 const KEY_BINDINGS=LOAD_KEY_BINDINGS();
 
 document.addEventListener("keydown",e=>{const k=e.key.toLowerCase();if(["arrowleft","arrowright","arrowup"," "].includes(k)||Object.values(KEY_BINDINGS).includes(k))e.preventDefault();if(k===KEY_BINDINGS.summon&&!e.repeat){summonUnit();return}if(actionLocked)return;

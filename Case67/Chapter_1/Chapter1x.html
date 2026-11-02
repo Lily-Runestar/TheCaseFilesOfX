@@ -176,6 +176,7 @@
     </div>
   </main>
 
+  <script src="../../player controls/player-controls.js"></script>
   <script>
     const AVAILABLE_NUMBERS = [-1, 1, 2, 3, 4, 5];
 
@@ -658,20 +659,7 @@
       requestAnimationFrame(GAME_LOOP);
     }
 
-    function loadKeyBindings() {
-      const defaults = { left: "a", right: "d", jump: "w", attack: " ", previous: "q", next: "e", summon: "s" };
-      try {
-        const saved = JSON.parse(localStorage.getItem("sixtySevenKeyBindings") || "{}");
-        for (const action in defaults) {
-          if (typeof saved[action] === "string" && (saved[action].length === 1 || saved[action] === " ")) {
-            defaults[action] = saved[action].toLowerCase();
-          }
-        }
-      } catch (error) {
-        console.warn("Key bindings could not be loaded; using defaults.", error);
-      }
-      return defaults;
-    }
+    function loadKeyBindings() { return loadPlayerBindings(); }
     const keyBindings = loadKeyBindings();
 
     document.addEventListener("keydown", event => {

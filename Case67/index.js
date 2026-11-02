@@ -14,25 +14,9 @@ const settingsStatus = document.getElementById("settings-status");
 const resetProgressButton = document.getElementById("reset-progress");
 const menuStatus = document.getElementById("menu-status");
 
-const DEFAULT_BINDINGS = {
-  left: "a",
-  right: "d",
-  jump: "w",
-  attack: " ",
-  previous: "q",
-  next: "e",
-  summon: "s"
-};
-const BINDING_LABELS = {
-  left: "Move Left",
-  right: "Move Right",
-  jump: "Jump",
-  attack: "Attack",
-  previous: "Previous Character",
-  next: "Next Character",
-  summon: "Summon"
-};
-const BINDINGS_STORAGE_KEY = "sixtySevenKeyBindings";
+const DEFAULT_BINDINGS = DEFAULT_PLAYER_BINDINGS;
+const BINDING_LABELS = PLAYER_BINDING_LABELS;
+const BINDINGS_STORAGE_KEY = PLAYER_BINDINGS_STORAGE_KEY;
 const PROGRESS_STORAGE_KEY = "sixtySevenProgress";
 const UNLOCK_ALL_CODE = "six-seven";
 let enteredCode = "";

@@ -44,6 +44,8 @@
     </div>
     <div id="MESSAGE" aria-live="assertive"></div>
   </main>
+  <script src="../../player controls/player-controls.js"></script>
+
   <script>
     const GAME=document.getElementById("GAME");
     const playerElement=document.getElementById("PLAYER");
@@ -75,14 +77,7 @@
     const carriedHealth=Number(new URLSearchParams(window.location.search).get("hp"));
     if(Number.isInteger(carriedHealth)&&carriedHealth>0)playerHealth=Math.min(carriedHealth,3);
 
-    function loadKeyBindings(){
-      const defaults={left:"a",right:"d",jump:"w",attack:" ",previous:"q",next:"e"};
-      try{
-        const saved=JSON.parse(localStorage.getItem("sixtySevenKeyBindings")||"{}");
-        for(const action in defaults)if(typeof saved[action]==="string"&&(saved[action].length===1||saved[action]===" "))defaults[action]=saved[action].toLowerCase();
-      }catch(error){console.warn("Saved key bindings could not be read.",error)}
-      return defaults;
-    }
+    function loadKeyBindings(){return loadPlayerBindings()}
     const keyBindings=loadKeyBindings();
 
     function loadUnlockedNumbers(){
