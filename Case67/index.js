@@ -73,6 +73,7 @@ function applyChapterState(progress) {
   chapterButtons.forEach((button) => {
     const chapter = button.dataset.chapter;
     const unlocked = progress.chapters[chapter] === "UNLOCKED";
+    button.classList.toggle("unlocked", unlocked);
     button.disabled = !unlocked;
     button.onclick = unlocked ? () => {
       window.location.href = chapterPages[chapter] || "";

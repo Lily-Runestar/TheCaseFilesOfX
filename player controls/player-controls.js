@@ -58,6 +58,14 @@ function savePlayerSettings(settings) {
   localStorage.setItem(PLAYER_SETTINGS_KEY, JSON.stringify(settings));
 }
 
+function getSelectedPlayableNumbers(unlockedNumbers = []) {
+  const unlocked = new Set([1, ...unlockedNumbers.map(Number)]);
+  const selected = loadPlayerSettings().cycle.filter((number, index, cycle) =>
+    unlocked.has(number) && cycle.indexOf(number) === index
+  );
+  return selected.length ? selected : [1];
+}
+
 function getStartingHealth() {
   const queryHealth = Number(new URLSearchParams(window.location.search).get("hp"));
   if (Number.isInteger(queryHealth) && queryHealth > 0) return Math.min(queryHealth, 5);

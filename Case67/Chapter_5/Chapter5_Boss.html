@@ -351,7 +351,7 @@
       } catch (error) {
         console.warn("Saved completion could not be read from browser storage.", error);
       }
-      unlockedNumbers = [-1, 1, 2, 3, 4, 5].filter((number) => unlocked.includes(number));
+      unlockedNumbers = getSelectedPlayableNumbers(unlocked);
       if (!unlockedNumbers.includes(currentNumber)) currentNumber = 1;
       setPlayerFrame(PLAYER_ANIMATIONS[playerAnimation][playerFrame] || "Still");
       setNumber(currentNumber);

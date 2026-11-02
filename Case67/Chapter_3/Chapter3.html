@@ -224,7 +224,7 @@ function UPDATE_ANIMATION(dt){
 
 function SET_NUMBER(n){if(!unlockedNumbers.includes(n))return;currentNumber=n;numberImage.src=`../Media/Images/${n}.png`;numberImage.alt=`Number ${n}`;numberImage.hidden=false;const iconScale={"-1":0.28,"1":0.2933,"2":0.32,"3":0.26,"4":0.26,"5":0.30};const iconOffset=n===1||n===2?20:0;numberImage.style.transform=`translate(${iconOffset}px,3px) scale(${iconScale[n]})`;projectile=null;PROJECTILE.hidden=true;dashTime=0;actionLocked=false;attacking=false;const animation=!onGround?(velocityY>0?"JUMP":"FALL"):(keys.left||keys.right?"WALK":"STILL");SET_ANIMATION(animation,true,true)}
 
-function LOAD_UNLOCKED_NUMBERS(){const out=[1];try{const saved=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");for(const [number,status] of Object.entries(saved.characters||{})){if(status==="UNLOCKED")out.push(Number(number))}if(localStorage.getItem("chapter1Completed")==="true")out.push(2)}catch(e){console.warn("Saved character progress could not be read from browser storage.",e)}return AVAILABLE_NUMBERS.filter(n=>out.includes(n))}
+function LOAD_UNLOCKED_NUMBERS(){const out=[1];try{const saved=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");for(const [number,status] of Object.entries(saved.characters||{})){if(status==="UNLOCKED")out.push(Number(number))}if(localStorage.getItem("chapter1Completed")==="true")out.push(2)}catch(e){console.warn("Saved character progress could not be read from browser storage.",e)}return getSelectedPlayableNumbers(out)}
 
 async function LOAD_COMPLETION_STATE(){unlockedNumbers=LOAD_UNLOCKED_NUMBERS();if(!unlockedNumbers.includes(currentNumber))currentNumber=1;SET_NUMBER(currentNumber);return true}
 

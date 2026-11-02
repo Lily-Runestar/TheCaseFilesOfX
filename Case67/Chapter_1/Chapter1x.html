@@ -420,7 +420,7 @@
         console.warn("Saved completion could not be read from browser storage.", error);
       }
 
-      return AVAILABLE_NUMBERS.filter(number => unlocked.includes(number));
+      return getSelectedPlayableNumbers(unlocked);
     }
 
     async function LOAD_COMPLETION_STATE() {
