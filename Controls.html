@@ -11,6 +11,7 @@
     button,a.back{color:#fff;background:#292929;border:1px solid #777;padding:10px;cursor:pointer;text-decoration:none}
     .top{display:flex;justify-content:space-between;align-items:center}.capturing{background:#777;color:#111}
     p{min-height:24px;text-align:center;color:#ccc}
+    #reset-progress{position:fixed;left:50%;bottom:16px;transform:translateX(-50%)}
   </style>
 </head>
 <body>
@@ -19,6 +20,7 @@
     <div id="bindings"></div>
     <p id="status" aria-live="polite">Choose a control, then press any key.</p>
   </main>
+  <button id="reset-progress" type="button">RESET PROGRESS</button>
   <script src="player controls/player-controls.js"></script>
   <script>
     const bindingsElement = document.getElementById("bindings");
@@ -61,6 +63,15 @@
       localStorage.setItem(PLAYER_BINDINGS_STORAGE_KEY, JSON.stringify(bindings));
       status.textContent = "Controls reset to defaults.";
       showBindings();
+    });
+    document.getElementById("reset-progress").addEventListener("click", () => {
+      if (!window.confirm("Reset all Case 67 progress?")) return;
+      localStorage.removeItem("sixtySevenProgress");
+      localStorage.removeItem("chapter1Completed");
+      const settings = loadPlayerSettings();
+      settings.hell = false;
+      savePlayerSettings(settings);
+      status.textContent = "Case progress reset.";
     });
     showBindings();
   </script>
