@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIXTYSEVEN — NUMBER 4</title>
+  <style>
+    @font-face {
+      font-family: Heading;
+      src: url("../Media/Fonts/Heading.ttf") format("truetype");
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #090909;
+      color: #eee;
+      font-family: Heading, sans-serif;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+    }
+
+    #GAME {
+      position: relative;
+      width: min(1280px, 100vw);
+      height: min(720px, 100vh);
+      overflow: hidden;
+      border: 2px solid #000;
+      background: #181818;
+      isolation: isolate;
+    }
+
+    #ARENA {
+      position: absolute;
+      inset: 0 0 112px;
+      overflow: hidden;
+      background: url("Media/Chapter4_Background.png") left top / auto 100% repeat-x;
+    }
+
+    #PLAYER-PROJECTILE {
+      position: absolute;
+      z-index: 4;
+      width: auto;
+      height: auto;
+      image-rendering: pixelated;
+      pointer-events: none;
+      transform-origin: center;
+    }
+
+    #GROUND {
+      position: absolute;
+      inset: auto 0 0;
+      height: 78px;
+      border-top: 3px solid #57465d;
+      background: #100e12 url("../Media/Images/Floor.png") repeat;
+      background-size: 64px 64px;
+    }
+
+    #PLAYER,
+    #ENEMY {
+      position: absolute;
+      bottom: 78px;
+      image-rendering: pixelated;
+      user-select: none;
+      pointer-events: none;
+      transform-origin: center bottom;
+    }
+
+    #PLAYER {
+      z-index: 3;
+      width: auto;
+      height: auto;
+      object-fit: initial;
+    }
+
+    #ENEMY {
+      z-index: 2;
+      width: auto;
+      height: auto;
+      object-fit: initial;
+    }
+
+    #HUD {
+      position: absolute;
+      top: 22px;
+      left: 22px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    #NUMBER-CIRCLE {
+      position: relative;
+      width: 82px;
+      height: 87px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #NUMBER-CIRCLE-BACKGROUND {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+      filter: invert(1);
+    }
+
+    #NUMBER-IMAGE {
+      position: absolute;
+      z-index: 1;
+      image-rendering: pixelated;
+      filter: invert(1);
+    }
+
+    #HEALTH {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .HEART {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+
+    #MESSAGE {
+      position: absolute;
+      left: 50%;
+      top: 43%;
+      transform: translate(-50%, -50%);
+      color: #eee;
+      font: 20px Heading, sans-serif;
+      letter-spacing: 2px;
+      text-align: center;
+      text-shadow: 0 2px #000;
+      z-index: 12;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    #BATTLE {
+      position: absolute;
+      z-index: 11;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 112px;
+      padding: 8px 18px;
+      border-top: 2px solid #7b8491;
+      background: rgba(5, 7, 10, .9);
+      color: #fff;
+      font: 13px Heading, sans-serif;
+    }
+
+    #BATTLE-LABEL {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 24px;
+      color: #dce4ef;
+    }
+
+    #BATTLE-LANE {
+      position: relative;
+      height: 70px;
+      overflow: hidden;
+      border-top: 1px solid #4f5865;
+      background: linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.12), rgba(255,255,255,.04));
+    }
+
+    .BATTLE-UNIT {
+      position: absolute;
+      bottom: 2px;
+      width: 44px;
+      height: 60px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      transform: translateX(-50%);
+    }
+
+    .BATTLE-UNIT-ALLY {
+      transform: translateX(-50%) scaleX(-1);
+    }
+
+  </style>
+</head>
+<body>
+  <main id="GAME" aria-label="Fight Number 4">
+    <div id="ARENA">
+      <div id="GROUND"></div>
+      <img id="PLAYER" src="../Media/Player/1/1_Still.png" alt="Player">
+      <img id="ENEMY" src="../Media/Enemy/4/4_Still.png" alt="Number 4">
+      <img id="PLAYER-PROJECTILE" alt="" hidden>
+    </div>
+
+    <div id="MESSAGE" aria-live="polite"></div>
+    <div id="HUD">
+      <div id="NUMBER-CIRCLE">
+        <img id="NUMBER-CIRCLE-BACKGROUND" src="../Media/Images/0.png" alt="">
+        <img id="NUMBER-IMAGE" src="../Media/Images/1.png" alt="Number 1">
+      </div>
+      <div id="HEALTH" aria-label="Health"></div>
+    </div>
+    <section id="BATTLE" aria-label="Automatic battle lane">
+      <div id="BATTLE-LABEL">
+        <span id="BATTLE-STATUS">SUMMON 1s TO FIGHT THE 0s</span>
+        <span id="BATTLE-COUNTS"></span>
+      </div>
+      <div id="BATTLE-LANE"></div>
+    </section>
+  </main>
+
+  <script>
+    const GAME = document.getElementById("GAME");
+    const arenaElement = document.getElementById("ARENA");
+    const groundElement = document.getElementById("GROUND");
+    const playerElement = document.getElementById("PLAYER");
+    const enemyElement = document.getElementById("ENEMY");
+    const projectileElement = document.getElementById("PLAYER-PROJECTILE");
+    const healthElement = document.getElementById("HEALTH");
+    const numberImage = document.getElementById("NUMBER-IMAGE");
+    const messageElement = document.getElementById("MESSAGE");
+    const battleLane = document.getElementById("BATTLE-LANE");
+    const battleStatus = document.getElementById("BATTLE-STATUS");
+    const battleCounts = document.getElementById("BATTLE-COUNTS");
+    const keys = { left: false, right: false };
+
+    const PLAYER_ANIMATIONS = {
+      STILL: ["Still"],
+      WALK: ["Still", "WalkF1", "WalkF2", "WalkF1", "WalkF2"],
+      JUMP: ["Jump"],
+      FALL: ["Fall"],
+      SWING: ["Still", "SwingF1", "SwingF2"]
+    };
+    const ENEMY_ANIMATIONS = {
+      STILL: ["Still"],
+      WALK: ["WalkF1", "WalkF2"],
+      JUMP: ["Jump"],
+      SWEEP: ["Sweep"]
+    };
+    const PLAYER_SPEED = 300;
+    const JUMP_POWER = 798.4;
+    const NUMBER_4_JUMP_POWER = 1050;
+    const GRAVITY = 1900;
+    const FLOOR_Y = 0;
+    const STAGE_WIDTH = GAME.clientWidth;
+    const PLAYER_WIDTH = 44;
+    const PLAYER_HEIGHT = 78;
+    const PLAYER_SCALE = 0.56;
+    const ENEMY_SCALE = 0.56;
+    const ENEMY_WALK_SPEED = 205;
+    const ENEMY_JUMP_POWER = 780;
+    const NUMBER_1_SWING_HOLD = 350;
+    const PLAYER_ATTACK_DAMAGE = {
+      "-1": { dash: 2 },
+      "1": { space: 3 },
+      "2": { space: 1 },
+      "3": { arrow: 2 },
+      "4": { jump: 1, space: 2 },
+      "5": { outbound: 1, returning: 3 }
+    };
+    const PLAYER_MAX_HEALTH = 3;
+    const ENEMY_MAX_HEALTH = 30;
+    const BATTLE_MIN_ENEMIES_FOR_VICTORY = 8;
+    const BATTLE_MAX_FRIENDS = 6;
+    const carriedHealth = Number(new URLSearchParams(window.location.search).get("hp"));
+
+    let unlockedNumbers = [1];
+    let currentNumber = 1;
+    let playerX = STAGE_WIDTH * 0.15;
+    let playerY = FLOOR_Y;
+    let playerVelocityY = 0;
+    let playerGrounded = true;
+    let playerHealth = Number.isInteger(carriedHealth) && carriedHealth > 0
+      ? Math.min(carriedHealth, PLAYER_MAX_HEALTH)
+      : PLAYER_MAX_HEALTH;
+    let enemyX = STAGE_WIDTH * 0.82;
+    let enemyY = FLOOR_Y;
+    let enemyVelocityY = 0;
+    let enemyVelocityX = 0;
+    let enemyGrounded = true;
+    let enemyVisualOffsetX = 0;
+    let enemyPhase = "walk-left";
+    let enemyJumpHit = false;
+    let enemyHealth = ENEMY_MAX_HEALTH;
+    let playerFacing = 1;
+    let enemyFacing = -1;
+    let playerAnimation = "STILL";
+    let enemyAnimation = "STILL";
+    let playerFrame = 0;
+    let enemyFrame = 0;
+    let playerAnimationTime = 0;
+    let playerFlip = 1;
+    let enemyAnimationTime = 0;
+    let playerAttackTime = 0;
+    let playerAttackHit = false;
+    let playerAttackKind = "melee";
+    let playerDashTime = 0;
+    let playerDashDirection = 1;
+    let playerDashHit = false;
+    let playerProjectile = null;
+    let playerInvulnerable = 0;
+    let finished = false;
+    let battleUnits = [];
+    let enemySpawnTimer = 2.5;
+    let enemiesSpawned = 0;
+    let enemiesDefeated = 0;
+    let summonCooldown = 0;
+    let battleFinished = false;
+    let hasSummonedAlly = false;
+    let lastTime = performance.now();
+    let messageTimer;
+
+    function loadUnlockedNumbers() {
+      const unlocked = [1];
+      try {
+        const savedProgress = JSON.parse(localStorage.getItem("sixtySevenProgress") || "{}");
+        for (const [number, status] of Object.entries(savedProgress.characters || {})) {
+          if (status === "UNLOCKED") unlocked.push(Number(number));
+        }
+        if (localStorage.getItem("chapter1Completed") === "true") {
+          unlocked.push(2);
+        }
+      } catch (error) {
+        console.warn("Saved completion could not be read from browser storage.", error);
+      }
+      unlockedNumbers = [-1, 1, 2, 3, 4, 5].filter((number) => unlocked.includes(number));
+      if (!unlockedNumbers.includes(currentNumber)) currentNumber = 1;
+      setPlayerFrame(PLAYER_ANIMATIONS[playerAnimation][playerFrame] || "Still");
+      setNumber(currentNumber);
+    }
+
+    function playerPath(frame) {
+      if (currentNumber === -1) {
+        const xFrame = frame === "Charge" ? "Charge" :
+          frame === "Walk" ? "Walk" : "Still";
+        return `../Media/Player/-1/-1_${xFrame}.png`;
+      }
+      const spriteNumber = currentNumber;
+      return `../Media/Player/${spriteNumber}/${spriteNumber}_${frame}.png`;
+    }
+
+    function playerAnimationFrames(name) {
+      if (currentNumber === -1) {
+        if (name === "WALK") return ["Walk", "Walk"];
+        if (name === "SWING") return ["Charge"];
+        return ["Still"];
+      }
+      if (currentNumber === 3) {
+        if (name === "WALK") return ["Walk"];
+        if (name === "SWING") return ["Swing", "Release"];
+        return ({ STILL: ["Still"], JUMP: ["Jump"], FALL: ["Fall"] })[name] ||
+          PLAYER_ANIMATIONS[name];
+      }
+      if (currentNumber === 4) {
+        if (name === "WALK") return ["WalkF1", "WalkF2"];
+        if (name === "SWING") {
+          return playerAttackKind === "jump"
+            ? ["Jump", "Jump"]
+            : ["Sweep", "Sweep", "Sweep", "Sweep"];
+        }
+        if (name === "FALL") return ["Sweep", "Sweep"];
+        return ({ STILL: ["Still"], JUMP: ["Jump"] })[name] ||
+          PLAYER_ANIMATIONS[name];
+      }
+      if (currentNumber === 5) {
+        const bladeActive = playerProjectile !== null;
+        if (name === "WALK") {
+          return bladeActive ? ["WalkAlt", "StillAlt"] : ["Walk", "Still"];
+        }
+        if (name === "SWING") return ["StillAlt", "StillAlt"];
+        if (name === "STILL") return [bladeActive ? "StillAlt" : "Still"];
+        if (name === "JUMP" || name === "FALL") {
+          return [bladeActive ? "StillAlt" : "Still"];
+        }
+      }
+      return PLAYER_ANIMATIONS[name];
+    }
+
+    function setPlayerFrame(frame) {
+      const src = playerPath(frame);
+      if (!playerElement.src.endsWith(src)) playerElement.src = src;
+    }
+
+    function setNumber(number) {
+      if (!unlockedNumbers.includes(number)) return;
+      currentNumber = number;
+      playerProjectile = null;
+      projectileElement.hidden = true;
+      playerAttackTime = 0;
+      playerDashTime = 0;
+      numberImage.src = `../Media/Images/${number}.png`;
+      numberImage.alt = `Number ${number}`;
+      numberImage.hidden = false;
+      const iconScale = { "-1": 0.28, "1": 0.2933, "2": 0.32, "3": 0.26, "4": 0.26, "5": 0.30 };
+      const iconOffset = number === 1 || number === 2 ? 20 : 0;
+      numberImage.style.transform =
+        `translate(${iconOffset}px, 3px) scale(${iconScale[number]})`;
+      setPlayerFrame(playerAnimationFrames(playerAnimation)[playerFrame] || "Still");
+    }
+
+    function setPlayerAnimation(name, reset = false) {
+      if (playerAnimation !== name || reset) {
+        playerAnimation = name;
+        playerFrame = 0;
+        playerAnimationTime = 0;
+        if (currentNumber === 4 && (name === "FALL" || name === "SWING")) {
+          playerFlip = 1;
+        }
+        setPlayerFrame(playerAnimationFrames(name)[0]);
+      }
+    }
+
+    function setEnemyFrame(frame) {
+      const src = `../Media/Enemy/4/4_${frame}.png`;
+      enemyElement.style.width = "";
+      enemyElement.style.height = "";
+      enemyVisualOffsetX = 0;
+      if (!enemyElement.src.endsWith(src)) enemyElement.src = src;
+    }
+
+    function setEnemyAnimation(name, reset = false) {
+      if (enemyAnimation !== name || reset) {
+        enemyAnimation = name;
+        enemyFrame = 0;
+        enemyAnimationTime = 0;
+        setEnemyFrame(ENEMY_ANIMATIONS[name][0]);
+      }
+    }
+
+    function updateVerticalMovement(y, velocityY, grounded, dt) {
+      if (!grounded) {
+        velocityY -= GRAVITY * dt;
+        y += velocityY * dt;
+      }
+
+      grounded = y <= FLOOR_Y;
+      if (grounded) {
+        y = FLOOR_Y;
+        velocityY = 0;
+      }
+
+      return { y, velocityY, grounded };
+    }
+
+    function animate(dt, elapsedMs) {
+      playerAnimationTime += elapsedMs;
+      enemyAnimationTime += elapsedMs;
+      const playerFrameDelay =
+        playerAnimation === "SWING" && currentNumber === 1 && playerFrame === 2
+          ? NUMBER_1_SWING_HOLD
+          : currentNumber === -1 && playerAnimation === "SWING"
+            ? 240
+          : currentNumber === 4 &&
+            (playerAnimation === "FALL" ||
+              (playerAnimation === "SWING" && playerAttackKind !== "jump"))
+            ? 70
+          : 140;
+      if (playerAnimationTime >= playerFrameDelay) {
+        playerAnimationTime -= playerFrameDelay;
+        const frames = playerAnimationFrames(playerAnimation);
+        if (playerAnimation === "SWING") {
+          if (playerFrame < frames.length - 1) {
+            playerFrame++;
+            if (currentNumber === 4 && playerAttackKind !== "jump") {
+              playerFlip *= -1;
+            }
+            setPlayerFrame(frames[playerFrame]);
+          } else {
+            playerAttackTime = 0;
+            setPlayerAnimation(playerGrounded ? (keys.left || keys.right ? "WALK" : "STILL") : "FALL", true);
+          }
+        } else if (frames.length > 1) {
+          playerFrame = (playerFrame + 1) % frames.length;
+          if (currentNumber === 4 && playerAnimation === "FALL") {
+            playerFlip *= -1;
+          }
+          setPlayerFrame(frames[playerFrame]);
+        }
+      }
+
+      if (enemyAnimationTime >= 140) {
+        enemyAnimationTime %= 140;
+        const frames = ENEMY_ANIMATIONS[enemyAnimation];
+        if (frames.length > 1) {
+          enemyFrame = (enemyFrame + 1) % frames.length;
+          setEnemyFrame(frames[enemyFrame]);
+        }
+      }
+    }
+
+    function damageEnemy(amount) {
+      enemyHealth = Math.max(0, enemyHealth - amount);
+      if (enemyHealth <= 0) finishFight(true);
+    }
+
+    function attackPlayer(kind = "space") {
+      if (finished || playerAttackTime > 0) return;
+      if (currentNumber === 5 && playerProjectile) {
+        playerX = playerProjectile.x;
+        playerY = playerProjectile.y;
+        playerVelocityY = 0;
+        playerGrounded = false;
+        playerProjectile = null;
+        projectileElement.hidden = true;
+        return;
+      }
+
+      playerAttackTime = 0.001;
+      playerAttackHit = false;
+      playerAttackKind = kind;
+      playerFacing = enemyX >= playerX ? 1 : -1;
+      setPlayerAnimation("SWING", true);
+
+      if (currentNumber === 3) {
+        playerProjectile = {
+          kind: "arrow",
+          x: playerX + playerFacing * 45,
+          y: playerY + 48,
+          direction: playerFacing,
+          elapsed: 0
+        };
+        projectileElement.src = "../Media/Player/3/3_Arrow.png";
+        projectileElement.hidden = false;
+      } else if (currentNumber === 5) {
+        playerProjectile = {
+          kind: "blade",
+          x: playerX + playerFacing * 42,
+          y: playerY + 50,
+          direction: playerFacing,
+          elapsed: 0,
+          phase: "outbound",
+          phaseTime: 0,
+          outboundHit: false,
+          returnHit: false,
+          rotation: 0
+        };
+        projectileElement.src = "../Media/Player/5/5_Alt.png";
+        projectileElement.hidden = false;
+      } else if (currentNumber === -1) {
+        playerDashTime = 0.24;
+        playerDashDirection = playerFacing;
+        playerDashHit = false;
+        playerInvulnerable = Math.max(playerInvulnerable, 0.5);
+      }
+    }
+
+    function playerAttackHits() {
+      const distance = enemyX - playerX;
+      return Math.abs(distance) < 112 &&
+        Math.abs(enemyY - playerY) < 88 &&
+        Math.sign(distance || playerFacing) === playerFacing;
+    }
+
+    function updatePlayerProjectile(dt) {
+      if (!playerProjectile) return;
+
+      const projectile = playerProjectile;
+      projectile.elapsed += dt;
+      projectile.phaseTime += dt;
+
+      if (projectile.kind === "arrow") {
+        projectile.x += projectile.direction * 620 * dt;
+        if (
+          Math.abs(projectile.x - enemyX) < 38 &&
+          Math.abs(projectile.y - (enemyY + 52)) < 76
+        ) {
+          damageEnemy(PLAYER_ATTACK_DAMAGE["3"].arrow);
+          playerProjectile = null;
+          projectileElement.hidden = true;
+          return;
+        }
+        if (projectile.elapsed >= 1.3 || projectile.x < 0 || projectile.x > STAGE_WIDTH) {
+          playerProjectile = null;
+          projectileElement.hidden = true;
+          return;
+        }
+      } else if (projectile.phase === "outbound") {
+        projectile.x += projectile.direction * 300 * dt;
+        if (
+          !projectile.outboundHit &&
+          Math.abs(projectile.x - enemyX) < 42 &&
+          Math.abs(projectile.y - (enemyY + 52)) < 82
+        ) {
+          projectile.outboundHit = true;
+          damageEnemy(PLAYER_ATTACK_DAMAGE["5"].outbound);
+        }
+        if (projectile.phaseTime >= 3) {
+          projectile.phase = "paused";
+          projectile.phaseTime = 0;
+        }
+      } else if (projectile.phase === "paused") {
+        if (projectile.phaseTime >= 0.45) {
+          projectile.phase = "returning";
+          projectile.phaseTime = 0;
+        }
+      } else {
+        const distanceToPlayer = playerX - projectile.x;
+        projectile.x += Math.sign(distanceToPlayer) * 480 * dt;
+        if (
+          !projectile.returnHit &&
+          Math.abs(projectile.x - enemyX) < 42 &&
+          Math.abs(projectile.y - (enemyY + 52)) < 82
+        ) {
+          projectile.returnHit = true;
+          damageEnemy(PLAYER_ATTACK_DAMAGE["5"].returning);
+        }
+        if (Math.abs(distanceToPlayer) < 30) {
+          playerProjectile = null;
+          projectileElement.hidden = true;
+          return;
+        }
+      }
+
+      projectileElement.style.left = `${projectile.x}px`;
+      projectileElement.style.bottom = `${78 + projectile.y}px`;
+      if (projectile.kind === "blade") {
+        projectile.rotation += 540 * dt;
+        projectileElement.style.transform =
+          `translateX(-50%) scale(0.65) rotate(${projectile.rotation}deg)`;
+      } else {
+        projectileElement.style.transform =
+          `translateX(-50%) scale(1.2) scaleX(${projectile.direction})`;
+      }
+    }
+
+    function updateHealth() {
+      healthElement.innerHTML = "";
+      for (let index = 0; index < PLAYER_MAX_HEALTH; index++) {
+        const heart = document.createElement("img");
+        heart.className = "HEART";
+        heart.src = "../Media/Images/Heart.png";
+        heart.alt = index < playerHealth ? "Heart" : "Empty heart";
+        heart.style.opacity = index < playerHealth ? "1" : ".2";
+        healthElement.appendChild(heart);
+      }
+    }
+
+    function showMessage(text) {
+      messageElement.textContent = text;
+      messageElement.style.opacity = "1";
+      clearTimeout(messageTimer);
+      messageTimer = setTimeout(() => {
+        messageElement.style.opacity = "0";
+      }, 1300);
+    }
+
+    function finishFight(won) {
+      finished = true;
+      keys.left = false;
+      keys.right = false;
+      window.location.href = won ? "Chapter4_Exit.html" : "../death.html";
+    }
+
+    function summonKeyUnlocked() {
+      try {
+        const progress = JSON.parse(localStorage.getItem("sixtySevenProgress") || "{}");
+        return progress.keys?.summon === "UNLOCKED" ||
+          progress.chapters?.["4"] === "UNLOCKED";
+      } catch (error) {
+        console.warn("Summon key access could not be read from browser storage.", error);
+        return false;
+      }
+    }
+
+    const canSummon = summonKeyUnlocked();
+
+    function createBattleUnit(side) {
+      const element = document.createElement("img");
+      element.className = side === 1
+        ? "BATTLE-UNIT BATTLE-UNIT-ALLY"
+        : "BATTLE-UNIT";
+      element.alt = side === 1 ? "Number 1 ally" : "Number 0 enemy";
+      element.src = side === 1
+        ? "../Media/Player/1/1_WalkF1.png"
+        : "../Media/Enemy/0/0_WalkF1.png";
+      battleLane.appendChild(element);
+      const laneWidth = battleLane.clientWidth;
+      battleUnits.push({
+        side,
+        x: side === 1 ? 28 : laneWidth - 28,
+        hp: side === 1 ? 3 : 2,
+        attackTimer: 0.45,
+        animationTimer: 0,
+        element
+      });
+    }
+
+    function summonUnit() {
+      if (finished || battleFinished || !canSummon || summonCooldown > 0) return;
+      if (battleUnits.filter((unit) => unit.side === 1 && unit.hp > 0).length >= BATTLE_MAX_FRIENDS) {
+        battleStatus.textContent =
+          `ALLIES AT CAPACITY — SUMMON [${keyBindings.summon.toUpperCase()}]`;
+        return;
+      }
+      createBattleUnit(1);
+      hasSummonedAlly = true;
+      summonCooldown = 0.45;
+    }
+
+    function finishBattle(won) {
+      if (battleFinished || finished) return;
+      battleFinished = true;
+      finished = true;
+      keys.left = false;
+      keys.right = false;
+      window.location.href = won ? "../death_alt.html" : "../death.html";
+    }
+
+    function updateBattle(dt) {
+      if (battleFinished) return;
+      summonCooldown = Math.max(0, summonCooldown - dt);
+      enemySpawnTimer -= dt;
+      if (enemySpawnTimer <= 0) {
+        createBattleUnit(0);
+        enemiesSpawned++;
+        enemySpawnTimer = 1.25;
+      }
+
+      const laneWidth = battleLane.clientWidth;
+      let enemyReachedBase = false;
+      for (const unit of battleUnits) {
+        if (unit.hp <= 0) continue;
+        unit.animationTimer += dt;
+        if (unit.animationTimer >= 0.42) {
+          unit.animationTimer = 0;
+          unit.element.src = unit.side === 1
+            ? (unit.element.src.endsWith("1_WalkF1.png")
+              ? "../Media/Player/1/1_WalkF2.png"
+              : "../Media/Player/1/1_WalkF1.png")
+            : (unit.element.src.endsWith("0_WalkF1.png")
+              ? "../Media/Enemy/0/0_WalkF2.png"
+              : "../Media/Enemy/0/0_WalkF1.png");
+        }
+
+        const target = battleUnits
+          .filter((other) => other.side !== unit.side && other.hp > 0)
+          .sort((a, b) => Math.abs(a.x - unit.x) - Math.abs(b.x - unit.x))[0];
+        if (!target) {
+          unit.x = Math.max(
+            24,
+            Math.min(laneWidth - 24, unit.x + (unit.side === 1 ? 125 : -105) * dt)
+          );
+          if (unit.side === 0 && unit.x <= 24) enemyReachedBase = true;
+          continue;
+        }
+
+        const distance = target.x - unit.x;
+        if (Math.abs(distance) > 40) {
+          unit.x += Math.sign(distance) * (unit.side === 1 ? 125 : 105) * dt;
+        } else {
+          unit.attackTimer -= dt;
+          if (unit.attackTimer <= 0) {
+            target.hp--;
+            unit.attackTimer = unit.side === 1 ? 0.68 : 0.92;
+          }
+        }
+      }
+
+      battleUnits = battleUnits.filter((unit) => {
+        if (unit.hp > 0) {
+          unit.element.style.left = `${unit.x}px`;
+          return true;
+        }
+        if (unit.side === 0) enemiesDefeated++;
+        unit.element.remove();
+        return false;
+      });
+
+      const allies = battleUnits.filter((unit) => unit.side === 1).length;
+      const enemies = battleUnits.filter((unit) => unit.side === 0).length;
+      battleStatus.textContent = canSummon
+        ? `SUMMON [${keyBindings.summon.toUpperCase()}] — 1s ${allies}/${BATTLE_MAX_FRIENDS}`
+        : "SUMMON KEY LOCKED";
+      battleCounts.textContent = `0s ${enemies} ACTIVE · ${enemiesDefeated} DEFEATED`;
+
+      if (
+        hasSummonedAlly &&
+        enemiesSpawned >= BATTLE_MIN_ENEMIES_FOR_VICTORY &&
+        enemies === 0 &&
+        allies > 0
+      ) {
+        finishBattle(true);
+      } else if (enemies > 0 && allies === 0 && (hasSummonedAlly || enemyReachedBase)) {
+        finishBattle(false);
+      }
+    }
+
+    function draw() {
+      playerElement.style.left = `${playerX}px`;
+      playerElement.style.bottom = `${78 + playerY}px`;
+      const facingFlip = playerFacing === 1 ? -1 : 1;
+      const animationFlip =
+        currentNumber === 4 &&
+        (playerAnimation === "FALL" ||
+          (playerAnimation === "SWING" && playerAttackKind !== "jump"))
+          ? playerFlip
+          : 1;
+      playerElement.style.transform =
+        `translateX(-50%) scale(${PLAYER_SCALE}) scaleX(${facingFlip * animationFlip})`;
+      const enemySpriteFlip = enemyFacing === 1 ? -1 : 1;
+      enemyElement.style.left =
+        `${enemyX - enemyVisualOffsetX * enemySpriteFlip}px`;
+      enemyElement.style.bottom = `${78 + enemyY}px`;
+      enemyElement.style.transform =
+        `translateX(-50%) scale(${ENEMY_SCALE}) scaleX(${enemySpriteFlip})`;
+    }
+
+    function update(dt, elapsedMs) {
+      if (finished) return;
+
+      const move = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+      if (playerDashTime > 0) {
+        playerDashTime = Math.max(0, playerDashTime - dt);
+        playerX += playerDashDirection * 900 * dt;
+        if (
+          !playerDashHit &&
+          Math.abs(enemyX - playerX) < 58 &&
+          Math.abs(enemyY - playerY) < 92
+        ) {
+          playerDashHit = true;
+          damageEnemy(PLAYER_ATTACK_DAMAGE["-1"].dash);
+        }
+      } else if (move !== 0 && playerAttackTime === 0) {
+        playerX = Math.max(PLAYER_WIDTH / 2, Math.min(STAGE_WIDTH - PLAYER_WIDTH / 2, playerX + move * PLAYER_SPEED * dt));
+        playerFacing = move;
+      }
+
+      if (playerAttackTime > 0) {
+        playerAttackTime += dt;
+        const attackHitTime = playerAttackKind === "jump" ? 0.1 : 0.18;
+        if (!playerAttackHit && playerAttackTime >= attackHitTime) {
+          playerAttackHit = true;
+          const damageByAction = PLAYER_ATTACK_DAMAGE[currentNumber];
+          const meleeDamage = damageByAction
+            ? damageByAction[playerAttackKind === "jump" ? "jump" : "space"]
+            : 0;
+          if (
+            meleeDamage &&
+            playerAttackHits() &&
+            currentNumber !== 3 &&
+            currentNumber !== 5 &&
+            currentNumber !== -1
+          ) {
+            damageEnemy(meleeDamage);
+          }
+        }
+      }
+
+      const playerPhysics = updateVerticalMovement(
+        playerY, playerVelocityY, playerGrounded, dt
+      );
+      playerY = playerPhysics.y;
+      playerVelocityY = playerPhysics.velocityY;
+      playerGrounded = playerPhysics.grounded;
+
+      updatePlayerProjectile(dt);
+
+      if (playerAttackTime === 0) {
+        setPlayerAnimation(!playerGrounded ? (playerVelocityY > 0 ? "JUMP" : "FALL") : move ? "WALK" : "STILL");
+      }
+
+      const wasGrounded = enemyGrounded;
+      const wasJumping = enemyPhase === "jump-left" || enemyPhase === "jump-right";
+      if (enemyPhase === "walk-left" || enemyPhase === "walk-right") {
+        const targetX = STAGE_WIDTH * (enemyPhase === "walk-left" ? 0.18 : 0.82);
+        const distanceToTarget = targetX - enemyX;
+        if (Math.abs(distanceToTarget) > 8) {
+          enemyFacing = Math.sign(distanceToTarget);
+          enemyX += enemyFacing * ENEMY_WALK_SPEED * dt;
+          setEnemyAnimation("WALK");
+        } else {
+          enemyX = targetX;
+          enemyPhase = enemyPhase === "walk-left" ? "jump-left" : "jump-right";
+          const playerLandingX = Math.max(80, Math.min(STAGE_WIDTH - 80, playerX));
+          enemyVelocityX = (playerLandingX - enemyX) / 0.8;
+          enemyVelocityY = ENEMY_JUMP_POWER;
+          enemyGrounded = false;
+          enemyJumpHit = false;
+          enemyFacing = enemyVelocityX >= 0 ? 1 : -1;
+          setEnemyAnimation(enemyPhase === "jump-left" ? "JUMP" : "SWEEP", true);
+        }
+      } else {
+        enemyX += enemyVelocityX * dt;
+        enemyFacing = enemyVelocityX >= 0 ? 1 : -1;
+      }
+
+      const enemyPhysics = updateVerticalMovement(
+        enemyY, enemyVelocityY, enemyGrounded, dt
+      );
+      enemyY = enemyPhysics.y;
+      enemyVelocityY = enemyPhysics.velocityY;
+      enemyGrounded = enemyPhysics.grounded;
+
+      if (
+        wasJumping &&
+        !enemyJumpHit &&
+        Math.abs(enemyX - playerX) < 62 &&
+        Math.abs(enemyY - playerY) < 96
+      ) {
+        enemyJumpHit = true;
+        if (playerInvulnerable <= 0) {
+          playerHealth--;
+          playerInvulnerable = 0.9;
+          playerElement.style.opacity = "0.45";
+          updateHealth();
+          if (playerHealth <= 0) finishFight(false);
+        }
+      }
+
+      if (enemyGrounded && !wasGrounded && wasJumping) {
+        enemyPhase = enemyPhase === "jump-left" ? "walk-right" : "walk-left";
+        enemyVelocityX = 0;
+        setEnemyAnimation("STILL", true);
+      }
+
+      if (playerInvulnerable > 0) {
+        playerInvulnerable -= dt;
+        if (playerInvulnerable <= 0) playerElement.style.opacity = "1";
+      }
+
+      playerX = Math.max(PLAYER_WIDTH / 2, Math.min(STAGE_WIDTH - PLAYER_WIDTH / 2, playerX));
+      enemyX = Math.max(50, Math.min(STAGE_WIDTH - 50, enemyX));
+      animate(dt, elapsedMs);
+      draw();
+    }
+
+    function loadKeyBindings() {
+      const defaults = { left: "a", right: "d", jump: "w", attack: " ", previous: "q", next: "e", summon: "s" };
+      try {
+        const saved = JSON.parse(localStorage.getItem("sixtySevenKeyBindings") || "{}");
+        for (const action in defaults) {
+          if (typeof saved[action] === "string" && (saved[action].length === 1 || saved[action] === " ")) {
+            defaults[action] = saved[action].toLowerCase();
+          }
+        }
+      } catch (error) {
+        console.warn("Key bindings could not be loaded; using defaults.", error);
+      }
+      return defaults;
+    }
+    const keyBindings = loadKeyBindings();
+
+    document.addEventListener("keydown", (event) => {
+      const key = event.key.toLowerCase();
+      if (["arrowleft", "arrowright", "arrowup", " "].includes(key)) event.preventDefault();
+      if (Object.values(keyBindings).includes(key)) event.preventDefault();
+      if (finished) return;
+      if (key === keyBindings.summon && !event.repeat) {
+        summonUnit();
+        return;
+      }
+      if (key === keyBindings.left || key === "arrowleft") keys.left = true;
+      if (key === keyBindings.right || key === "arrowright") keys.right = true;
+      if (
+        (key === keyBindings.jump || key === "arrowup") &&
+        currentNumber !== -1 &&
+        !event.repeat &&
+        playerGrounded
+      ) {
+        playerVelocityY = currentNumber === 4 ? NUMBER_4_JUMP_POWER : JUMP_POWER;
+        playerGrounded = false;
+        if (currentNumber === 4) {
+          attackPlayer("jump");
+        } else {
+          setPlayerAnimation("JUMP", true);
+        }
+      }
+      if (key === keyBindings.attack && !event.repeat) attackPlayer();
+      if (key === keyBindings.previous && !event.repeat && unlockedNumbers.length > 1) {
+        const index = unlockedNumbers.indexOf(currentNumber);
+        setNumber(unlockedNumbers[(index - 1 + unlockedNumbers.length) % unlockedNumbers.length]);
+      }
+      if (key === keyBindings.next && !event.repeat && unlockedNumbers.length > 1) {
+        const index = unlockedNumbers.indexOf(currentNumber);
+        setNumber(unlockedNumbers[(index + 1) % unlockedNumbers.length]);
+      }
+    });
+
+    document.addEventListener("keyup", (event) => {
+      const key = event.key.toLowerCase();
+      if (key === keyBindings.left || key === "arrowleft") keys.left = false;
+      if (key === keyBindings.right || key === "arrowright") keys.right = false;
+    });
+
+    window.addEventListener("blur", () => {
+      keys.left = false;
+      keys.right = false;
+    });
+
+    async function start() {
+      try {
+        await loadUnlockedNumbers();
+      } catch (error) {
+        console.error(error);
+      }
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function gameLoop(time) {
+      if (finished) return;
+      const elapsedMs = time - lastTime;
+      lastTime = time;
+      updateBattle(Math.min(elapsedMs / 1000, 0.04));
+      if (finished) return;
+      update(Math.min(elapsedMs / 1000, 0.04), elapsedMs);
+      if (!finished) requestAnimationFrame(gameLoop);
+    }
+
+    updateHealth();
+    groundElement.style.width = "100%";
+    setEnemyFrame("Still");
+    start();
+  </script>
+</body>
+</html>

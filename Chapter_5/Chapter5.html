@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>SIXTYSEVEN — CHAPTER 5</title>
+
+<style>
+
+@font-face{font-family:Heading;src:url("../Media/Fonts/Heading.ttf") format("truetype")}
+
+*{box-sizing:border-box;font-family:Heading,sans-serif}
+
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111}
+
+body{display:flex;align-items:center;justify-content:center}
+
+#GAME{position:relative;width:min(1280px,100vw);height:min(720px,100vh);overflow:hidden;background:#181818;border:2px solid #000;isolation:isolate}
+
+#WORLD{position:absolute;inset:0;overflow:hidden;background:linear-gradient(#08090d,#15151b 62%,#08090d)}
+
+#SCENERY{position:absolute;inset:0;will-change:transform}
+
+#GROUND{position:absolute;left:0;bottom:0;width:100%;height:145px;background:transparent;overflow:hidden;pointer-events:none}
+
+.platform{position:absolute;height:32px;background:transparent;image-rendering:pixelated;object-fit:fill}
+
+.spike{position:absolute;height:42px;object-fit:fill;image-rendering:pixelated;pointer-events:none}
+
+#PLAYER{position:absolute;left:100px;bottom:90px;image-rendering:pixelated;transform:translateX(-50%) scale(0.56) scaleX(-1);transform-origin:bottom center;user-select:none;pointer-events:none;z-index:5}
+#PROJECTILE{position:absolute;left:0;bottom:90px;image-rendering:pixelated;transform:translateX(-50%);transform-origin:center;user-select:none;pointer-events:none;z-index:4}
+
+#HUD{position:absolute;top:22px;left:22px;display:flex;align-items:center;gap:18px;z-index:10;pointer-events:none}
+
+#NUMBER-CIRCLE{position:relative;width:82px;height:87px;display:flex;align-items:center;justify-content:center}
+
+#NUMBER-CIRCLE-BACKGROUND{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;filter:invert(1)}
+
+#NUMBER-IMAGE{position:absolute;z-index:1;image-rendering:pixelated;filter:invert(1)}
+
+#HEALTH{display:flex;align-items:center;gap:6px}.HEART{width:32px;height:32px;object-fit:contain;image-rendering:pixelated}
+
+#HINT{position:absolute;right:18px;top:24px;color:#bbb;font:14px Heading,sans-serif;text-align:right;line-height:1.7;text-shadow:0 2px #000;z-index:10;pointer-events:none}
+
+#STATUS{position:absolute;left:50%;top:22px;transform:translateX(-50%);color:#ddd;font:12px Heading,sans-serif;letter-spacing:3px;z-index:10;white-space:nowrap}
+
+#MESSAGE{position:absolute;left:50%;top:43%;transform:translate(-50%,-50%);color:#eee;font:20px Heading,sans-serif;letter-spacing:2px;text-align:center;text-shadow:0 2px #000;z-index:12;pointer-events:none;opacity:0;transition:opacity .2s}
+
+#BATTLE{position:absolute;z-index:11;left:0;right:0;bottom:0;height:112px;padding:8px 18px;background:rgba(5,7,10,.9);border-top:2px solid #7b8491;color:#fff;font:13px Heading,sans-serif}
+#BATTLE-LABEL{display:flex;justify-content:space-between;align-items:center;height:24px;color:#dce4ef}
+#BATTLE-LANE{position:relative;height:70px;overflow:hidden;background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.12),rgba(255,255,255,.04));border-top:1px solid #4f5865}
+.BATTLE-UNIT{position:absolute;bottom:2px;width:44px;height:60px;object-fit:contain;image-rendering:pixelated;transform:translateX(-50%)}
+.BATTLE-UNIT-ALLY{transform:translateX(-50%) scaleX(-1)}
+
+</style>
+
+</head>
+
+<body>
+
+<main id="GAME" aria-label="SIXTYSEVEN CHAPTER 5 adventure">
+
+<div id="WORLD"><div id="SCENERY"><div id="GROUND"></div></div><img id="PLAYER" src="../Media/Player/1/1_Still.png" alt="Player"><img id="PROJECTILE" alt="" hidden></div>
+<div id="MESSAGE" aria-live="polite"></div>
+<div id="HUD"><div id="NUMBER-CIRCLE"><img id="NUMBER-CIRCLE-BACKGROUND" src="../Media/Images/0.png" alt=""><img id="NUMBER-IMAGE" src="../Media/Images/1.png" alt="Number 1"></div><div id="HEALTH" aria-label="Health"></div></div>
+<section id="BATTLE" aria-label="Automatic battle lane">
+  <div id="BATTLE-LABEL"><span id="BATTLE-STATUS">SUMMON 1s TO FIGHT THE 0s</span><span id="BATTLE-COUNTS"></span></div>
+  <div id="BATTLE-LANE"></div>
+</section>
+
+</main>
+
+<script>
+
+const AVAILABLE_NUMBERS=[-1,1,2,3,4,5];
+
+const GAME=document.getElementById("GAME"), WORLD=document.getElementById("WORLD"), SCENERY=document.getElementById("SCENERY"), PLAYER=document.getElementById("PLAYER"), PROJECTILE=document.getElementById("PROJECTILE");
+
+const numberImage=document.getElementById("NUMBER-IMAGE"), healthEl=document.getElementById("HEALTH"), messageEl=document.getElementById("MESSAGE");
+
+let unlockedNumbers=[1],currentNumber=1;
+
+const ANIMATION_SPEED=140, NUMBER_1_SWING_HOLD=350;
+
+const ANIMATIONS={STILL:["Still"],WALK:["Still","WalkF1","WalkF2","WalkF1","WalkF2"],JUMP:["Jump"],FALL:["Fall"],SWING:["Still","SwingF1","SwingF2"]};
+
+let currentAnimation="STILL",animationFrame=0,animationTimer=0,actionLocked=false,attacking=false;
+let fallFlip=1;
+
+const PLAYER_SPEED=320,JUMP_POWER=798.4,NUMBER_4_JUMP_POWER=1050,GRAVITY=1900,PLAYER_W=44,PLAYER_H=78,GROUND_H=145,PLAYER_SCALE=0.56;
+
+let playerX=100,playerY=0,velocityX=0,velocityY=0,onGround=true,facing=1,cameraX=0,hearts=3,lastTime=performance.now(),invulnerable=0,won=false,dashTime=0,dashDirection=1,projectile=null;
+
+let lastSafeX=100,lastSafeY=0;
+
+const keys={left:false,right:false};
+
+const platforms=[
+ {x:0,y:0,w:390},{x:460,y:0,w:420},{x:950,y:0,w:400},{x:1420,y:0,w:430},
+ {x:390,y:105,w:130},{x:720,y:150,w:145},{x:1080,y:110,w:165},
+ {x:1460,y:150,w:145},{x:1740,y:105,w:140},
+ {x:1900,y:0,w:390},{x:2360,y:0,w:420},{x:2850,y:0,w:400},{x:3320,y:0,w:430},
+ {x:1980,y:130,w:150},{x:2290,y:180,w:145},{x:2670,y:115,w:170},
+ {x:3010,y:190,w:155},{x:3370,y:130,w:175}
+];
+
+const spikes=[
+ {x:270,y:0,w:70},{x:600,y:0,w:84},{x:1010,y:0,w:90},
+ {x:1330,y:0,w:70},{x:1660,y:0,w:84},
+ {x:2140,y:0,w:84},{x:2470,y:0,w:70},{x:2800,y:0,w:100},
+ {x:3150,y:0,w:84},{x:3480,y:0,w:90}
+];
+
+const WORLD_WIDTH=3750;
+
+function buildMap(){
+
+ SCENERY.style.width=WORLD_WIDTH+"px";
+
+ SCENERY.style.backgroundImage="url(Media/Chapter5_Background.png)";
+
+ SCENERY.style.backgroundSize="auto 100%";
+
+ SCENERY.style.backgroundRepeat="repeat-x";
+
+ SCENERY.style.backgroundPosition="left top";
+// Fill the entire walkable ground with floor tiles so the player can stand on the base level all the way across the world.
+for(let x=0;x<WORLD_WIDTH;x+=64){
+  const tileWidth=Math.min(64,WORLD_WIDTH-x);
+  for(let y=0;y<GROUND_H;y+=64){
+    const tileHeight=Math.min(64,GROUND_H-y);
+    const tile=document.createElement("img");
+    tile.src="../Media/Images/Floor.png";
+    tile.alt="";
+    tile.draggable=false;
+    tile.style.cssText=`position:absolute;left:${x}px;bottom:${y}px;width:${tileWidth}px;height:${tileHeight}px;object-fit:fill;image-rendering:pixelated;display:block`;
+    tile.onerror=()=>{tile.style.display="none"};
+    SCENERY.appendChild(tile);
+  }
+}
+
+  // Each platform is built from square image tiles. Their top edges line up with the collision surface.
+
+ platforms.filter(p=>p.y>0).forEach(p=>{
+
+   for(let x=p.x;x<p.x+p.w;x+=64){
+
+    const tile=document.createElement("img");tile.className="platform";tile.src="../Media/Images/Platform.png";tile.alt="";tile.draggable=false;
+
+    tile.style.cssText=`left:${x}px;bottom:${GROUND_H+p.y-64}px;width:${Math.min(64,p.x+p.w-x)}px;height:64px;object-fit:cover;image-rendering:pixelated`;
+
+    tile.onerror=()=>{tile.style.display="none"};SCENERY.appendChild(tile);
+
+  }
+
+  });
+
+  spikes.forEach(s=>{const e=document.createElement("img");e.className="spike";e.src="../Media/Images/Spikes.png";e.alt="Spikes";e.draggable=false;e.style.cssText=`left:${s.x}px;bottom:${GROUND_H+s.y}px;width:${s.w}px;height:42px`;e.onerror=()=>{e.style.display="none"};SCENERY.appendChild(e)});
+
+  const end=document.createElement("div");end.id="EXIT";end.style.cssText=`position:absolute;left:${WORLD_WIDTH-100}px;bottom:${GROUND_H}px;width:8px;height:210px;visibility:hidden`;SCENERY.appendChild(end);
+
+}
+
+function drawHearts(){healthEl.innerHTML="";for(let i=0;i<3;i++){const h=document.createElement("img");h.className="HEART";h.src="../Media/Images/Heart.png";h.alt=i<hearts?"Heart":"Empty heart";h.style.opacity=i<hearts?"1":".2";healthEl.appendChild(h)}}
+
+const battleLane=document.getElementById("BATTLE-LANE");
+const battleStatus=document.getElementById("BATTLE-STATUS");
+const battleCounts=document.getElementById("BATTLE-COUNTS");
+const BATTLE_MIN_ENEMIES_FOR_VICTORY=8,BATTLE_MAX_FRIENDS=6;
+let battleUnits=[],enemySpawnTimer=2.5,enemiesSpawned=0,enemiesDefeated=0,summonCooldown=0,battleFinished=false,hasSummonedAlly=false;
+
+function summonKeyUnlocked(){
+  try{
+    const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");
+    return progress.keys?.summon==="UNLOCKED"||progress.chapters?.["4"]==="UNLOCKED"
+  }catch(error){
+    console.warn("Summon key access could not be read from browser storage.",error);
+    return false
+  }
+}
+
+const canSummon=summonKeyUnlocked();
+
+function createBattleUnit(side){
+  const element=document.createElement("img");
+  element.className=side===1?"BATTLE-UNIT BATTLE-UNIT-ALLY":"BATTLE-UNIT";
+  element.alt=side===1?"Number 1 ally":"Number 0 enemy";
+  element.src=side===1?"../Media/Player/1/1_WalkF1.png":"../Media/Enemy/0/0_WalkF1.png";
+  battleLane.appendChild(element);
+  const laneWidth=battleLane.clientWidth;
+  const unit={side,x:side===1?28:laneWidth-28,hp:side===1?3:2,attackTimer:0.45,animationTimer:0,element};
+  battleUnits.push(unit);
+}
+
+function summonUnit(){
+  if(battleFinished||!canSummon||summonCooldown>0)return;
+  if(battleUnits.filter(unit=>unit.side===1&&unit.hp>0).length>=BATTLE_MAX_FRIENDS){
+    battleStatus.textContent=`ALLIES AT CAPACITY — SUMMON [${KEY_BINDINGS.summon.toUpperCase()}]`;
+    return
+  }
+  createBattleUnit(1);
+  hasSummonedAlly=true;
+  summonCooldown=0.45
+}
+
+function finishBattle(won){
+  if(battleFinished)return;
+  battleFinished=true;
+  keys.left=keys.right=false;
+  window.location.href=won?"../death_alt.html":"../death.html";
+}
+
+function updateBattle(dt){
+  if(battleFinished)return;
+  summonCooldown=Math.max(0,summonCooldown-dt);
+  enemySpawnTimer-=dt;
+  if(enemySpawnTimer<=0){
+    createBattleUnit(0);
+    enemiesSpawned++;
+    enemySpawnTimer=1.25
+  }
+
+  const laneWidth=battleLane.clientWidth;
+  let enemyReachedBase=false;
+  for(const unit of battleUnits){
+    if(unit.hp<=0)continue;
+    unit.animationTimer+=dt;
+    if(unit.animationTimer>=0.42){
+      unit.animationTimer=0;
+      unit.element.src=unit.side===1
+        ?(unit.element.src.endsWith("1_WalkF1.png")?"../Media/Player/1/1_WalkF2.png":"../Media/Player/1/1_WalkF1.png")
+        :(unit.element.src.endsWith("0_WalkF1.png")?"../Media/Enemy/0/0_WalkF2.png":"../Media/Enemy/0/0_WalkF1.png")
+    }
+    const target=battleUnits
+      .filter(other=>other.side!==unit.side&&other.hp>0)
+      .sort((a,b)=>Math.abs(a.x-unit.x)-Math.abs(b.x-unit.x))[0];
+    if(!target){
+        unit.x=Math.max(24,Math.min(laneWidth-24,unit.x+(unit.side===1?125:-105)*dt));
+        if(unit.side===0&&unit.x<=24)enemyReachedBase=true;
+        continue
+    }
+    const distance=target.x-unit.x;
+    if(Math.abs(distance)>40){
+      unit.x+=Math.sign(distance)*(unit.side===1?125:105)*dt
+    }else{
+      unit.attackTimer-=dt;
+      if(unit.attackTimer<=0){
+        target.hp--;
+        unit.attackTimer=unit.side===1?0.68:0.92
+      }
+    }
+  }
+
+  battleUnits=battleUnits.filter(unit=>{
+    if(unit.hp>0){
+      unit.element.style.left=`${unit.x}px`;
+      return true
+    }
+    if(unit.side===0)enemiesDefeated++;
+    unit.element.remove();
+    return false
+  });
+  const allies=battleUnits.filter(unit=>unit.side===1).length;
+  const enemies=battleUnits.filter(unit=>unit.side===0).length;
+  battleStatus.textContent=canSummon
+    ?`SUMMON [${KEY_BINDINGS.summon.toUpperCase()}] — 1s ${allies}/${BATTLE_MAX_FRIENDS}`
+    :"SUMMON KEY LOCKED";
+  battleCounts.textContent=`0s ${enemies} ACTIVE · ${enemiesDefeated} DEFEATED`;
+
+  if(hasSummonedAlly&&enemiesSpawned>=BATTLE_MIN_ENEMIES_FOR_VICTORY&&enemies===0&&allies>0){
+    finishBattle(true)
+  }else if(enemies>0&&allies===0&&(hasSummonedAlly||enemyReachedBase)){
+    finishBattle(false)
+  }
+}
+
+function PLAYER_PATH(frameName){if(currentNumber===-1){const xFrame=frameName==="Charge"?"Charge":frameName==="Walk"?"Walk":"Still";return `../Media/Player/-1/-1_${xFrame}.png`}return `../Media/Player/${currentNumber}/${currentNumber}_${frameName}.png`}
+
+function SET_FRAME(frameName){const src=PLAYER_PATH(frameName);if(!PLAYER.src.endsWith(src))PLAYER.src=src}
+
+function PLAYER_ANIMATION_FRAMES(name){
+  if(currentNumber===-1){if(name==="WALK")return["Walk","Walk"];if(name==="DASH")return["Charge"];return["Still"]}
+  if(currentNumber===3){if(name==="WALK")return["Walk"];if(name==="SWING")return["Swing","Release"];return({STILL:["Still"],JUMP:["Jump"],FALL:["Fall"]})[name]||ANIMATIONS[name]}
+  if(currentNumber===4){if(name==="WALK")return["WalkF1","WalkF2"];if(name==="SWING")return["Sweep","Sweep","Sweep","Sweep"];if(name==="FALL")return["Sweep","Sweep"];return({STILL:["Still"],JUMP:["Jump"]})[name]||ANIMATIONS[name]}
+  if(currentNumber===5){const bladeActive=projectile&&projectile.kind==="number-five";if(name==="STILL")return[bladeActive?"StillAlt":"Still"];if(name==="WALK")return bladeActive?["WalkAlt","StillAlt"]:["Walk","Still"];if(name==="SWING")return["StillAlt","StillAlt"];if(name==="JUMP"||name==="FALL")return[bladeActive?"StillAlt":"Still"]}
+  return ANIMATIONS[name]||["Still"]
+}
+
+function SET_ANIMATION(name,reset=true,force=false){if((!ANIMATIONS[name]&&name!=="DASH")||(actionLocked&&!force))return;if(currentAnimation!==name||reset){currentAnimation=name;animationFrame=0;animationTimer=0;if(currentNumber===4&&(name==="FALL"||name==="SWING"))fallFlip=1;SET_FRAME(PLAYER_ANIMATION_FRAMES(name)[0])}}
+
+function UPDATE_ANIMATION(dt){
+  const frames=PLAYER_ANIMATION_FRAMES(currentAnimation);
+  if(!frames||frames.length===0){SET_FRAME("Still");return}
+  if(frames.length===1){
+    SET_FRAME(frames[0]);
+    if(actionLocked&&currentAnimation==="SWING"){
+      animationTimer+=dt;
+      if(animationTimer<ANIMATION_SPEED)return;
+      actionLocked=false;attacking=false;animationTimer=0;
+      SET_ANIMATION(!onGround?(velocityY>0?"JUMP":"FALL"):(keys.left||keys.right?"WALK":"STILL"),true,true);
+    }
+    return
+  }
+  animationTimer+=dt;
+  const delay=currentNumber===1&&actionLocked&&currentAnimation==="SWING"&&animationFrame===2?NUMBER_1_SWING_HOLD:currentNumber===4&&(currentAnimation==="FALL"||currentAnimation==="SWING")?ANIMATION_SPEED/2:ANIMATION_SPEED;
+  if(animationTimer<delay)return;
+  animationTimer-=delay;animationFrame++;
+  if(currentNumber===4&&(currentAnimation==="FALL"||currentAnimation==="SWING"))fallFlip*=-1;
+  if(actionLocked&&currentAnimation==="SWING"){
+    if(animationFrame<frames.length){SET_FRAME(frames[animationFrame]);return}
+    actionLocked=false;attacking=false;animationFrame=0;animationTimer=0;
+    SET_ANIMATION(!onGround?(velocityY>0?"JUMP":"FALL"):(keys.left||keys.right?"WALK":"STILL"),true,true);
+    return
+  }
+  animationFrame%=frames.length;SET_FRAME(frames[animationFrame])
+}
+
+function SET_NUMBER(n){if(!unlockedNumbers.includes(n))return;currentNumber=n;numberImage.src=`../Media/Images/${n}.png`;numberImage.alt=`Number ${n}`;numberImage.hidden=false;const iconScale={"-1":0.28,"1":0.2933,"2":0.32,"3":0.26,"4":0.26,"5":0.30};const iconOffset=n===1||n===2?20:0;numberImage.style.transform=`translate(${iconOffset}px,3px) scale(${iconScale[n]})`;projectile=null;PROJECTILE.hidden=true;dashTime=0;actionLocked=false;attacking=false;const animation=!onGround?(velocityY>0?"JUMP":"FALL"):(keys.left||keys.right?"WALK":"STILL");SET_ANIMATION(animation,true,true)}
+
+function LOAD_UNLOCKED_NUMBERS(){const out=[1];try{const saved=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");for(const [number,status] of Object.entries(saved.characters||{})){if(status==="UNLOCKED")out.push(Number(number))}if(localStorage.getItem("chapter1Completed")==="true")out.push(2)}catch(e){console.warn("Saved character progress could not be read from browser storage.",e)}return AVAILABLE_NUMBERS.filter(n=>out.includes(n))}
+
+async function LOAD_COMPLETION_STATE(){unlockedNumbers=LOAD_UNLOCKED_NUMBERS();if(!unlockedNumbers.includes(currentNumber))currentNumber=1;SET_NUMBER(currentNumber);return true}
+
+async function CHANGE_NUMBER(dir){if(actionLocked)return;await LOAD_COMPLETION_STATE();if(unlockedNumbers.length<2)return;const i=unlockedNumbers.indexOf(currentNumber);SET_NUMBER(unlockedNumbers[(i+dir+unlockedNumbers.length)%unlockedNumbers.length])}
+
+function showMessage(t){messageEl.textContent=t;messageEl.style.opacity="1";clearTimeout(showMessage.timer);showMessage.timer=setTimeout(()=>messageEl.style.opacity="0",1300)}
+
+function overlap(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+
+function damage(ignoreInvulnerability=false){
+
+if(invulnerable>0&&!ignoreInvulnerability)return;
+
+ hearts--;drawHearts();invulnerable=1.15;PLAYER.style.opacity=".45";
+
+ // Respawn at the most recent safe grounded position, not at a fixed checkpoint.
+
+ if(hearts<=0){
+
+   // A full death restarts the chapter from its initial state.
+
+   keys.left=keys.right=false;
+
+   window.location.href="../death.html";
+
+   return;
+
+ }
+
+playerX=lastSafeX;playerY=lastSafeY;velocityY=0;velocityX=0;onGround=true;dashTime=0;projectile=null;PROJECTILE.hidden=true;
+
+ keys.left=keys.right=false;actionLocked=false;attacking=false;SET_ANIMATION("STILL",true,true);
+}
+
+function START_ATTACK(){
+  if(currentNumber===-1){
+    if(dashTime>0)return;
+    dashDirection=facing;dashTime=0.24;invulnerable=Math.max(invulnerable,0.5);
+    actionLocked=false;attacking=true;SET_ANIMATION("DASH",true,true);return
+  }
+  if(currentNumber===5){
+    if(projectile){
+      playerX=projectile.x;playerY=projectile.y;velocityY=0;onGround=false;
+      projectile=null;PROJECTILE.hidden=true;SET_ANIMATION("FALL",true,true);return
+    }
+    projectile={kind:"number-five",x:playerX+facing*48,y:playerY,verticalOffset:-20,direction:facing,elapsed:0,phase:"outbound",pauseTime:0,rotation:0};
+    PROJECTILE.src="../Media/Player/5/5_Alt.png";PROJECTILE.hidden=false
+  }else if(currentNumber===3){
+    projectile={kind:"arrow",x:playerX,y:playerY,verticalOffset:(177*PLAYER_SCALE-PROJECTILE.naturalHeight*1.2)/2,direction:facing,elapsed:0};
+    PROJECTILE.src="../Media/Player/3/3_Arrow.png";PROJECTILE.hidden=false
+  }
+  attacking=true;actionLocked=true;SET_ANIMATION("SWING",true,true)
+}
+
+function UPDATE_PROJECTILE(dt){
+  if(!projectile)return;
+  projectile.elapsed+=dt;
+  if(projectile.kind==="arrow"){
+    projectile.x+=projectile.direction*620*dt;
+    if(projectile.elapsed>=1.3||projectile.x<0||projectile.x>WORLD_WIDTH){projectile=null;PROJECTILE.hidden=true;return}
+  }else if(projectile.phase==="outbound"){
+    projectile.x=Math.max(50,Math.min(WORLD_WIDTH-50,projectile.x+projectile.direction*180*dt));
+    if(projectile.elapsed>=3){projectile.phase="paused";projectile.pauseTime=0}
+  }else if(projectile.phase==="paused"){
+    projectile.pauseTime+=dt;if(projectile.pauseTime>=0.45)projectile.phase="returning"
+  }else{
+    const dx=playerX-projectile.x;projectile.x+=Math.sign(dx)*480*dt;
+    if(Math.abs(dx)<=30){projectile=null;PROJECTILE.hidden=true;return}
+  }
+  PROJECTILE.style.left=`${projectile.x-cameraX}px`;
+  PROJECTILE.style.bottom=`${GROUND_H+projectile.y+projectile.verticalOffset}px`;
+  if(projectile.kind==="number-five"){
+    projectile.rotation+=540*dt;
+    PROJECTILE.style.transform=`translateX(-50%) scale(0.65) rotate(${projectile.rotation}deg)`
+  }else{
+    PROJECTILE.style.transform=`translateX(-50%) scale(1.2) scaleX(${projectile.direction})`
+  }
+}
+
+function UPDATE_PLAYER(dt){
+
+ if(won)return;
+ if(dashTime>0){dashTime=Math.max(0,dashTime-dt);velocityX=dashDirection*1050;if(dashTime===0){attacking=false;SET_ANIMATION(onGround?(keys.left||keys.right?"WALK":"STILL"):(velocityY>0?"JUMP":"FALL"),true,true)}}
+ else velocityX=actionLocked?0:((keys.right?PLAYER_SPEED:0)-(keys.left?PLAYER_SPEED:0));
+ if(dashTime===0&&velocityX!==0)facing=velocityX<0?-1:1;
+
+ const prevY=playerY,prevX=playerX;playerX=Math.max(PLAYER_W/2,Math.min(WORLD_WIDTH-50,playerX+velocityX*dt));
+
+ if(!onGround){velocityY-=GRAVITY*dt;playerY+=velocityY*dt}
+
+ const feet={x:playerX-PLAYER_W/2+7,y:playerY,w:PLAYER_W-14,h:4};let landed=null;
+
+ if(velocityY<=0){for(const p of platforms){if(prevY>=p.y-1&&playerY<=p.y&&playerX+PLAYER_W/2>p.x&&playerX-PLAYER_W/2<p.x+p.w){if(!landed||p.y>landed.y)landed=p}}}
+
+ if(landed){playerY=landed.y;velocityY=0;onGround=true}
+
+ else if(playerY<=0){playerY=0;velocityY=0;onGround=true}
+
+ else onGround=false;
+
+ if(!actionLocked&&dashTime===0){if(!onGround)SET_ANIMATION(velocityY>0?"JUMP":"FALL",false);else if(keys.left||keys.right)SET_ANIMATION("WALK",false);else if(currentAnimation==="WALK"||currentAnimation==="JUMP"||currentAnimation==="FALL")SET_ANIMATION("STILL",false)}
+
+ const body={x:playerX-PLAYER_W/2+6,y:playerY+4,w:PLAYER_W-12,h:PLAYER_H-8};
+
+ let touchingSpike=false;
+
+ for(const s of spikes){if(overlap(body,{x:s.x+4,y:s.y,w:s.w-8,h:27})){touchingSpike=true;damage(currentNumber===-1&&dashTime>0);break}}
+
+ // Update the safe return position only while standing on a solid surface away from spikes.
+
+ if(onGround&&!touchingSpike&&invulnerable<=0){lastSafeX=playerX;lastSafeY=playerY}
+
+ if(playerY < -160){damage()}
+
+ if(playerX>WORLD_WIDTH-120){
+   won=true;
+   keys.left=keys.right=false;
+   window.location.href=`Chapter5_Boss.html?hp=${hearts}`;
+   return
+ }
+
+ const cameraMax=Math.max(0,WORLD_WIDTH-GAME.clientWidth);cameraX=Math.max(0,Math.min(cameraMax,playerX-GAME.clientWidth*.36));
+
+ SCENERY.style.transform=`translateX(${-cameraX}px)`;
+
+ PLAYER.style.left=(playerX-cameraX)+"px";PLAYER.style.bottom=(GROUND_H+playerY)+"px";
+
+ const facingFlip=velocityX<0?1:velocityX>0?-1:(facing<0?1:-1);
+ const animationFlip=currentNumber===4&&(currentAnimation==="FALL"||currentAnimation==="SWING")?fallFlip:1;
+ PLAYER.style.transform=`translateX(-50%) scale(${PLAYER_SCALE}) scaleX(${facingFlip*animationFlip})`;
+
+  UPDATE_PROJECTILE(dt);
+
+ if(invulnerable>0){invulnerable-=dt;if(invulnerable<=0)PLAYER.style.opacity="1"}
+
+}
+
+function GAME_LOOP(time){if(battleFinished)return;const ms=time-lastTime;lastTime=time;const dt=Math.min(ms/1000,.04);updateBattle(dt);if(battleFinished)return;UPDATE_PLAYER(dt);UPDATE_ANIMATION(ms);if(!battleFinished)requestAnimationFrame(GAME_LOOP)}
+
+function LOAD_KEY_BINDINGS(){const defaults={left:"a",right:"d",jump:"w",attack:" ",previous:"q",next:"e",summon:"s"};try{const saved=JSON.parse(localStorage.getItem("sixtySevenKeyBindings")||"{}");for(const action in defaults){if(typeof saved[action]==="string"&&(saved[action].length===1||saved[action]===" "))defaults[action]=saved[action].toLowerCase()}return defaults}catch(error){console.warn("Key bindings could not be loaded; using defaults.",error);return defaults}}
+const KEY_BINDINGS=LOAD_KEY_BINDINGS();
+
+document.addEventListener("keydown",e=>{const k=e.key.toLowerCase();if(["arrowleft","arrowright","arrowup"," "].includes(k)||Object.values(KEY_BINDINGS).includes(k))e.preventDefault();if(k===KEY_BINDINGS.summon&&!e.repeat){summonUnit();return}if(actionLocked)return;
+
+ if(k===KEY_BINDINGS.left||k==="arrowleft")keys.left=true;if(k===KEY_BINDINGS.right||k==="arrowright")keys.right=true;
+
+ if((k===KEY_BINDINGS.jump||k==="arrowup")&&currentNumber!==-1&&!e.repeat&&onGround){velocityY=currentNumber===4?NUMBER_4_JUMP_POWER:JUMP_POWER;onGround=false;SET_ANIMATION("JUMP");}
+
+ if(k===KEY_BINDINGS.attack&&!e.repeat)START_ATTACK();
+
+ if(k===KEY_BINDINGS.previous&&!e.repeat)CHANGE_NUMBER(-1);if(k===KEY_BINDINGS.next&&!e.repeat)CHANGE_NUMBER(1);
+});
+
+document.addEventListener("keyup",e=>{const k=e.key.toLowerCase();if(k===KEY_BINDINGS.left||k==="arrowleft")keys.left=false;if(k===KEY_BINDINGS.right||k==="arrowright")keys.right=false});
+
+window.addEventListener("blur",()=>{keys.left=keys.right=false});
+
+buildMap();drawHearts();SET_ANIMATION("STILL");PLAYER.style.left=playerX+"px";PLAYER.style.bottom=GROUND_H+"px";LOAD_COMPLETION_STATE();requestAnimationFrame(GAME_LOOP);
+
+</script>
+
+</body></html>

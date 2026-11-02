@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIXTYSEVEN — NUMBERS 6 AND 7</title>
+  <style>
+    @font-face{font-family:Heading;src:url("../Media/Fonts/Heading.ttf") format("truetype")}
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#090909;color:#eee;font-family:Heading,sans-serif}
+    body{display:grid;place-items:center}
+    #GAME{position:relative;width:min(1280px,100vw);height:min(720px,100vh);overflow:hidden;border:2px solid #000;background:#181818;isolation:isolate}
+    #ARENA{position:absolute;inset:0;overflow:hidden;background:#100e12 url("Media/Chapter7_Background.png") left top / auto 100% repeat-x}
+    #GROUND{position:absolute;left:0;right:0;bottom:0;height:78px;border-top:3px solid #57465d;background:#100e12 url("../Media/Images/Floor.png") repeat;background-size:64px 64px}
+    .fighter{position:absolute;bottom:78px;width:auto;height:auto;image-rendering:pixelated;user-select:none;pointer-events:none;transform-origin:center bottom}
+    #PLAYER{z-index:4}
+    .boss{z-index:3}
+    #BOSS-6.casting{animation:castBlink .2s steps(2,start) infinite}
+    @keyframes castBlink{50%{opacity:.25}}
+    #PLAYER-PROJECTILE{position:absolute;z-index:5;width:auto;height:auto;image-rendering:pixelated;pointer-events:none;transform-origin:center}
+    #SPELL{position:absolute;z-index:5;width:116px;height:116px;object-fit:contain;image-rendering:pixelated;pointer-events:none;transform:translateX(-50%);opacity:.75}
+    #HUD{position:absolute;z-index:10;top:20px;left:20px;display:flex;align-items:center;gap:14px;pointer-events:none}
+    #NUMBER-CIRCLE{position:relative;width:78px;height:82px;display:grid;place-items:center}
+    #NUMBER-CIRCLE img:first-child{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:invert(1);image-rendering:pixelated}
+    #NUMBER-IMAGE{position:absolute;z-index:1;image-rendering:pixelated;filter:invert(1)}
+    #HEALTH{display:flex;gap:5px}
+    .HEART{width:30px;height:30px;object-fit:contain;image-rendering:pixelated}
+    #MESSAGE{position:absolute;z-index:12;left:50%;top:50%;transform:translate(-50%,-50%);width:90%;text-align:center;color:#fff;font:26px Arial,sans-serif;letter-spacing:2px;text-shadow:0 2px 5px #000;pointer-events:none}
+  </style>
+</head>
+<body>
+  <main id="GAME" aria-label="Chapter 7 boss arena">
+    <section id="ARENA">
+      <div id="GROUND"></div>
+      <img id="PLAYER" class="fighter" src="../Media/Player/1/1_Still.png" alt="Player">
+      <img id="BOSS-6" class="fighter boss" src="../Media/Enemy/6/6_Still.png" alt="Number 6">
+      <img id="BOSS-7" class="fighter boss" src="../Media/Enemy/7/7_Still.png" alt="Number 7">
+      <img id="PLAYER-PROJECTILE" alt="" hidden>
+      <img id="SPELL" src="../Media/Enemy/6/6_Alt.png" alt="" hidden>
+    </section>
+    <div id="HUD">
+      <div id="NUMBER-CIRCLE"><img src="../Media/Images/0.png" alt=""><img id="NUMBER-IMAGE" src="../Media/Images/1.png" alt="Number 1"></div>
+      <div id="HEALTH" aria-label="Player health"></div>
+    </div>
+    <div id="MESSAGE" aria-live="assertive"></div>
+  </main>
+  <script>
+    const GAME=document.getElementById("GAME");
+    const playerElement=document.getElementById("PLAYER");
+    const boss6Element=document.getElementById("BOSS-6");
+    const boss7Element=document.getElementById("BOSS-7");
+    const projectileElement=document.getElementById("PLAYER-PROJECTILE");
+    const spellElement=document.getElementById("SPELL");
+    const healthElement=document.getElementById("HEALTH");
+    const numberImage=document.getElementById("NUMBER-IMAGE");
+    const messageElement=document.getElementById("MESSAGE");
+    const keys={left:false,right:false};
+    const AVAILABLE_NUMBERS=[-1,1,2,3,4,5];
+    const PLAYER_SPEED=300,JUMP_POWER=798.4,NUMBER_4_JUMP_POWER=1050,GRAVITY=1900;
+    const FLOOR_Y=0,FLOOR_HEIGHT=78,PLAYER_WIDTH=44,PLAYER_HEIGHT=78,PLAYER_SCALE=.56,BOSS_SCALE=.62;
+    const PLAYER_DAMAGE={"-1":2,"1":3,"2":1,"3":2,"4":2,"5":3};
+    const ANIMATION_DELAY=140;
+    let unlockedNumbers=[1],currentNumber=1;
+    let playerX=GAME.clientWidth*.15,playerY=0,playerVelocityY=0,playerGrounded=true;
+    let playerHealth=3,playerFacing=1,playerAnimation="STILL",playerFrame=0,playerAnimationTimer=0;
+    let playerFlip=1;
+    let playerAttackTimer=0,playerAttackHit=false,playerAttackKind="melee",playerDashTimer=0,playerDashHit=false,playerDashDirection=1;
+    let playerProjectile=null,playerInvulnerable=0;
+    let boss6Health=15,boss7Health=25,boss6X=GAME.clientWidth*.72,boss7X=GAME.clientWidth*.86;
+    let boss6Facing=-1,boss7Facing=-1,boss6Animation="STILL",boss6Frame=0,boss6Timer=0;
+    let boss7Animation="STILL",boss7Frame=0,boss7Timer=0;
+    let spellTimer=6,spellChannelTimer=0,spell=null,introTimer=0,spellReleaseTimer=0;
+    let spinCooldown=2.5,spinTimer=0,spinHitTimer=0,spinDirection=-1;
+    let finished=false,lastTime=performance.now();
+    const carriedHealth=Number(new URLSearchParams(window.location.search).get("hp"));
+    if(Number.isInteger(carriedHealth)&&carriedHealth>0)playerHealth=Math.min(carriedHealth,3);
+
+    function loadKeyBindings(){
+      const defaults={left:"a",right:"d",jump:"w",attack:" ",previous:"q",next:"e"};
+      try{
+        const saved=JSON.parse(localStorage.getItem("sixtySevenKeyBindings")||"{}");
+        for(const action in defaults)if(typeof saved[action]==="string"&&(saved[action].length===1||saved[action]===" "))defaults[action]=saved[action].toLowerCase();
+      }catch(error){console.warn("Saved key bindings could not be read.",error)}
+      return defaults;
+    }
+    const keyBindings=loadKeyBindings();
+
+    function loadUnlockedNumbers(){
+      const unlocked=[1];
+      try{
+        const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");
+        for(const [number,state] of Object.entries(progress.characters||{}))if(state==="UNLOCKED")unlocked.push(Number(number));
+        if(localStorage.getItem("chapter1Completed")==="true")unlocked.push(2);
+      }catch(error){console.warn("Saved character progress could not be read.",error)}
+      unlockedNumbers=AVAILABLE_NUMBERS.filter(number=>unlocked.includes(number));
+      setNumber(unlockedNumbers.includes(currentNumber)?currentNumber:1);
+    }
+
+    function playerFrames(name){
+      if(currentNumber===-1)return name==="WALK"?["Walk"]:name==="SWING"?["Charge"]:["Still"];
+      if(currentNumber===3)return name==="WALK"?["Walk"]:name==="SWING"?["Swing","Release"]:({STILL:["Still"],JUMP:["Jump"],FALL:["Fall"]})[name]||["Still"];
+      if(currentNumber===4)return name==="WALK"?["WalkF1","WalkF2"]:name==="SWING"?(playerAttackKind==="jump"?["Jump"]:["Sweep","Sweep","Sweep","Sweep"]):({STILL:["Still"],JUMP:["Jump"],FALL:["Sweep","Sweep"]})[name]||["Still"];
+      if(currentNumber===5)return name==="WALK"?["Walk","Still"]:name==="SWING"?["StillAlt","StillAlt"]:[name==="STILL"?"Still":"Still"];
+      return ({STILL:["Still"],WALK:["Still","WalkF1","WalkF2","WalkF1","WalkF2"],JUMP:["Jump"],FALL:["Fall"],SWING:["Still","SwingF1","SwingF2"]})[name]||["Still"];
+    }
+    function setPlayerFrame(frame){playerElement.src=`../Media/Player/${currentNumber}/${currentNumber}_${frame}.png`}
+    function setPlayerAnimation(name,reset=false){
+      if(playerAnimation===name&&!reset)return;
+      playerAnimation=name;playerFrame=0;playerAnimationTimer=0;
+      if(currentNumber===4&&(name==="FALL"||name==="SWING"))playerFlip=1;
+      setPlayerFrame(playerFrames(name)[0]);
+    }
+    function setBossFrame(element,number,frame){
+      const src=`../Media/Enemy/${number}/${number}_${frame}.png`;
+      if(!element.src.endsWith(src))element.src=src;
+    }
+    function setBoss7Animation(name){
+      if(boss7Animation===name)return;
+      boss7Animation=name;boss7Frame=0;boss7Timer=0;
+      if(name==="SPIN"){setBossFrame(boss7Element,7,"AttackF1");boss7Frame=1}
+      else if(name==="WALK"){setBossFrame(boss7Element,7,"WalkF1");boss7Frame=1}
+      else setBossFrame(boss7Element,7,"Still");
+    }
+    function setNumber(number){
+      if(!unlockedNumbers.includes(number))return;
+      currentNumber=number;
+      numberImage.src=`../Media/Images/${number}.png`;numberImage.alt=`Number ${number}`;
+      const scales={"-1":.28,"1":.2933,"2":.32,"3":.26,"4":.26,"5":.30};
+      numberImage.style.transform=`translate(${number===1||number===2?20:0}px,3px) scale(${scales[number]})`;
+      setPlayerAnimation(!playerGrounded?(playerVelocityY>0?"JUMP":"FALL"):(keys.left||keys.right?"WALK":"STILL"),true);
+    }
+    function drawHealth(){
+      healthElement.replaceChildren();
+      for(let i=0;i<3;i++){
+        const heart=document.createElement("img");heart.className="HEART";heart.src="../Media/Images/Heart.png";
+        heart.alt=i<playerHealth?"Heart":"Empty heart";heart.style.opacity=i<playerHealth?"1":".2";healthElement.appendChild(heart);
+      }
+    }
+    function finishFight(victory){
+      if(finished)return;
+      finished=true;keys.left=keys.right=false;
+      window.setTimeout(()=>{window.location.href=victory?"Chapter7_Exit.html":"../death.html"},victory?900:500);
+    }
+    function damagePlayer(ignoreIFrames=false){
+      if(finished||(!ignoreIFrames&&playerInvulnerable>0))return;
+      playerHealth--;drawHealth();playerElement.style.opacity=".45";
+      if(playerHealth<=0){finishFight(false);return}
+      if(!ignoreIFrames)playerInvulnerable=.9;
+    }
+    function damageBoss(number,amount){
+      if(introTimer<BOSS_INTRO_DURATION)return;
+      if(number===6){
+        boss6Health=Math.max(0,boss6Health-amount);
+        if(boss6Health===0){boss6Element.hidden=true;spell=null;spellElement.hidden=true}
+      }else{
+        boss7Health=Math.max(0,boss7Health-amount);
+        if(boss7Health===0)boss7Element.hidden=true;
+      }
+      drawHealth();
+      if(boss6Health===0&&boss7Health===0)finishFight(true);
+    }
+    function setNumberFacingTarget(){playerFacing=(Math.abs(boss6X-playerX)<Math.abs(boss7X-playerX)?boss6X:boss7X)>=playerX?1:-1}
+    function meleeHitsBoss(x,y,facing){
+      return Math.abs(x-playerX)<110&&Math.abs(y-playerY)<95&&Math.sign(x-playerX||facing)===facing;
+    }
+    function attackPlayer(kind="melee"){
+      if(finished)return;
+      if(currentNumber===5&&playerProjectile){
+        playerX=playerProjectile.x;
+        playerY=playerProjectile.y;
+        playerVelocityY=0;
+        playerGrounded=false;
+        playerProjectile=null;
+        projectileElement.hidden=true;
+        return;
+      }
+      if(playerAttackTimer>0)return;
+      playerAttackTimer=.36;playerAttackHit=false;playerAttackKind=kind;setNumberFacingTarget();
+      setPlayerAnimation("SWING",true);
+      if(currentNumber===-1){
+        playerDashTimer=.24;playerDashDirection=playerFacing;playerDashHit=false;
+        playerInvulnerable=Math.max(playerInvulnerable,.5);
+      }
+      if(currentNumber===3){
+        playerProjectile={kind:"arrow",x:playerX+playerFacing*45,y:playerY+48,direction:playerFacing,elapsed:0};
+        projectileElement.src="../Media/Player/3/3_Arrow.png";projectileElement.hidden=false;
+      }else if(currentNumber===5){
+        playerProjectile={
+          kind:"blade",x:playerX+playerFacing*42,y:playerY+50,direction:playerFacing,elapsed:0,
+          phase:"outbound",phaseTime:0,outboundHits:new Set(),returnHits:new Set(),rotation:0
+        };
+        projectileElement.src="../Media/Player/5/5_Alt.png";projectileElement.hidden=false;
+      }
+    }
+    function updateProjectile(dt){
+      if(!playerProjectile)return;
+      const p=playerProjectile;p.elapsed+=dt;p.phaseTime+=dt;
+      if(p.kind==="arrow"){
+        p.x+=p.direction*620*dt;
+        for(const [number,x] of [[6,boss6X],[7,boss7X]]){
+          if(Math.abs(p.x-x)<38&&Math.abs(p.y-55)<76){
+            damageBoss(number,2);
+            playerProjectile=null;projectileElement.hidden=true;
+            if(finished)return;
+            return;
+          }
+        }
+        if(p.elapsed>=1.3||p.x<0||p.x>GAME.clientWidth){
+          playerProjectile=null;projectileElement.hidden=true;return;
+        }
+      }else if(p.phase==="outbound"){
+        p.x+=p.direction*300*dt;
+        for(const [number,x] of [[6,boss6X],[7,boss7X]]){
+          if(!p.outboundHits.has(number)&&Math.abs(p.x-x)<42&&Math.abs(p.y-55)<82){
+            p.outboundHits.add(number);damageBoss(number,1);
+            if(finished)return;
+          }
+        }
+        if(p.phaseTime>=3){p.phase="paused";p.phaseTime=0}
+      }else if(p.phase==="paused"){
+        if(p.phaseTime>=.45){p.phase="returning";p.phaseTime=0}
+      }else{
+        const distanceToPlayer=playerX-p.x;
+        p.x+=Math.sign(distanceToPlayer)*480*dt;
+        for(const [number,x] of [[6,boss6X],[7,boss7X]]){
+          if(!p.returnHits.has(number)&&Math.abs(p.x-x)<42&&Math.abs(p.y-55)<82){
+            p.returnHits.add(number);damageBoss(number,3);
+            if(finished)return;
+          }
+        }
+        if(Math.abs(distanceToPlayer)<30){
+          playerProjectile=null;projectileElement.hidden=true;return;
+        }
+      }
+      projectileElement.style.left=`${p.x}px`;projectileElement.style.bottom=`${FLOOR_HEIGHT+p.y}px`;
+      if(p.kind==="blade"){p.rotation+=540*dt;projectileElement.style.transform=`translateX(-50%) scale(.65) rotate(${p.rotation}deg)`}
+      else projectileElement.style.transform=`translateX(-50%) scale(1.2) scaleX(${p.direction})`;
+    }
+    function updateBoss6(dt){
+      if(boss6Health<=0)return;
+      if(spellChannelTimer>0){
+        boss6Animation="CHARGE";
+        spellChannelTimer=Math.max(0,spellChannelTimer-dt);
+        spellElement.style.opacity=".75";
+        if(spellChannelTimer<=0){
+          spellElement.style.opacity="1";
+          if(Math.abs(playerX-spell.x)<56&&Math.abs(playerY-spell.y)<72)damagePlayer();
+          spellReleaseTimer=.18;
+          boss6Animation="ATTACK";
+          spellTimer=6;
+          setBossFrame(boss6Element,6,"Attack");
+          return;
+        }
+      }else{
+        if(spellReleaseTimer>0){
+          spellReleaseTimer=Math.max(0,spellReleaseTimer-dt);
+          if(spellReleaseTimer===0){spell=null;spellElement.hidden=true}
+        }
+        spellTimer-=dt;
+        if(spellTimer<=0){
+          spellChannelTimer=1.5;
+          spell={x:playerX,y:playerY};
+          spellElement.hidden=false;
+          spellElement.style.opacity=".75";
+          spellElement.style.left=`${spell.x}px`;
+          spellElement.style.bottom=`${FLOOR_HEIGHT+spell.y+PLAYER_HEIGHT/2-58}px`;
+          boss6Animation="CHARGE";
+          setBossFrame(boss6Element,6,"Charge");
+        }else if(Math.abs(playerX-boss6X)>150){
+          boss6Animation="WALK";
+          boss6Facing=playerX>boss6X?1:-1;boss6X+=boss6Facing*85*dt;
+        }else boss6Animation="STILL";
+      }
+    }
+    function updateBoss7(dt){
+      if(boss7Health<=0)return;
+      if(spinTimer>0){
+        spinTimer=Math.max(0,spinTimer-dt);setBoss7Animation("SPIN");
+        boss7Facing=spinDirection;boss7X+=spinDirection*520*dt;
+        spinHitTimer-=dt;
+        if(Math.abs(playerX-boss7X)<66&&Math.abs(playerY)<95&&spinHitTimer<=0){
+          damagePlayer();spinHitTimer=.55;
+        }
+        if(spinTimer===0)spinCooldown=2.8;
+      }else{
+        spinCooldown-=dt;setBoss7Animation("WALK");
+        if(Math.abs(playerX-boss7X)>78){boss7Facing=playerX>boss7X?1:-1;boss7X+=boss7Facing*125*dt}
+        else setBoss7Animation("STILL");
+        if(spinCooldown<=0){
+          spinTimer=.45;spinHitTimer=0;spinDirection=playerX>=boss7X?1:-1;
+          setBoss7Animation("SPIN");
+        }
+      }
+      boss7X=Math.max(50,Math.min(GAME.clientWidth-50,boss7X));
+    }
+    function animateBosses(dt){
+      if(introTimer<BOSS_INTRO_DURATION){
+        const introFrame=introTimer<.45?1:2;
+        setBossFrame(boss6Element,6,`AltF${introFrame}`);
+        setBossFrame(boss7Element,7,`AltF${introFrame}`);
+        return;
+      }
+      boss6Timer+=dt*1000;boss7Timer+=dt*1000;
+      if(boss6Timer>=ANIMATION_DELAY){
+        boss6Timer%=ANIMATION_DELAY;
+        if(boss6Animation==="WALK"){
+          setBossFrame(boss6Element,6,boss6Frame===0?"Still":"Walk");
+          boss6Frame=1-boss6Frame;
+        }else{
+          boss6Frame=0;
+          setBossFrame(boss6Element,6,boss6Animation==="CHARGE"?"Charge":boss6Animation==="ATTACK"?"Attack":"Still");
+        }
+      }
+      if(boss7Timer>=110){
+        boss7Timer%=110;
+        if(boss7Animation==="SPIN"){
+          if(boss7Frame<3){boss7Frame++;setBossFrame(boss7Element,7,`AttackF${boss7Frame}`)}
+        }else if(boss7Animation==="WALK"){
+          setBossFrame(boss7Element,7,`WalkF${boss7Frame+1}`);boss7Frame=(boss7Frame+1)%2;
+        }else setBossFrame(boss7Element,7,"Still");
+      }
+    }
+    function draw(){
+      playerElement.style.left=`${playerX}px`;playerElement.style.bottom=`${FLOOR_HEIGHT+playerY}px`;
+      const animationFlip=currentNumber===4&&(playerAnimation==="FALL"||(playerAnimation==="SWING"&&playerAttackKind!=="jump"))?playerFlip:1;
+      playerElement.style.transform=`translateX(-50%) scale(${PLAYER_SCALE}) scaleX(${(playerFacing===1?-1:1)*animationFlip})`;
+      boss6Element.classList.toggle("casting",boss6Health>0&&spellChannelTimer>0);
+      boss6Element.style.left=`${boss6X}px`;boss6Element.style.transform=`translateX(-50%) scale(${BOSS_SCALE}) scaleX(${boss6Facing===1?-1:1})`;
+      boss7Element.style.left=`${boss7X}px`;boss7Element.style.transform=`translateX(-50%) scale(${BOSS_SCALE}) scaleX(${boss7Facing===1?-1:1})`;
+    }
+    function update(dt,elapsedMs){
+      if(finished)return;
+      introTimer=Math.min(BOSS_INTRO_DURATION,introTimer+dt);
+      const movement=(keys.right?1:0)-(keys.left?1:0);
+      if(playerDashTimer>0){
+        playerDashTimer=Math.max(0,playerDashTimer-dt);playerX+=playerDashDirection*900*dt;
+        if(!playerDashHit){
+          for(const [number,x] of [[6,boss6X],[7,boss7X]])if(Math.abs(x-playerX)<60){playerDashHit=true;damageBoss(number,PLAYER_DAMAGE[-1])}
+        }
+      }else if(movement&&playerAttackTimer<=0){
+        playerX+=movement*PLAYER_SPEED*dt;playerFacing=movement;
+      }
+      if(playerAttackTimer>0){
+        playerAttackTimer-=dt;
+        if(!playerAttackHit&&playerAttackTimer<=.18){
+          playerAttackHit=true;
+          if(currentNumber!==3&&currentNumber!==5&&currentNumber!==-1){
+            for(const [number,x] of [[6,boss6X],[7,boss7X]])if(meleeHitsBoss(x,0,playerFacing))damageBoss(number,PLAYER_DAMAGE[currentNumber]);
+          }
+        }
+      }
+      if(!playerGrounded){playerVelocityY-=GRAVITY*dt;playerY+=playerVelocityY*dt}
+      if(playerY<=FLOOR_Y){playerY=FLOOR_Y;playerVelocityY=0;playerGrounded=true}
+      else playerGrounded=false;
+      playerX=Math.max(PLAYER_WIDTH/2,Math.min(GAME.clientWidth-PLAYER_WIDTH/2,playerX));
+      if(playerAttackTimer<=0)setPlayerAnimation(!playerGrounded?(playerVelocityY>0?"JUMP":"FALL"):movement?"WALK":"STILL");
+      if(introTimer>=BOSS_INTRO_DURATION){updateBoss6(dt);updateBoss7(dt)}
+      updateProjectile(dt);
+      if(playerInvulnerable>0){playerInvulnerable-=dt;if(playerInvulnerable<=0)playerElement.style.opacity="1"}
+      playerAnimationTimer+=elapsedMs;
+      const playerFrameDelay=currentNumber===4&&(playerAnimation==="FALL"||(playerAnimation==="SWING"&&playerAttackKind!=="jump"))?70:ANIMATION_DELAY;
+      if(playerAnimationTimer>=playerFrameDelay){
+        playerAnimationTimer%=playerFrameDelay;
+        const frames=playerFrames(playerAnimation);
+        if(frames.length>1){
+          playerFrame=(playerFrame+1)%frames.length;
+          if(currentNumber===4&&(playerAnimation==="FALL"||(playerAnimation==="SWING"&&playerAttackKind!=="jump")))playerFlip*=-1;
+          setPlayerFrame(frames[playerFrame]);
+        }
+      }
+      animateBosses(dt);draw();
+    }
+    function gameLoop(time){
+      if(finished)return;
+      const elapsed=time-lastTime;lastTime=time;update(Math.min(elapsed/1000,.04),elapsed);
+      if(!finished)requestAnimationFrame(gameLoop);
+    }
+    document.addEventListener("keydown",event=>{
+      const key=event.key.toLowerCase();
+      if(["arrowleft","arrowright","arrowup"," "].includes(key)||Object.values(keyBindings).includes(key))event.preventDefault();
+      if(finished)return;
+      if(key===keyBindings.left||key==="arrowleft")keys.left=true;
+      if(key===keyBindings.right||key==="arrowright")keys.right=true;
+      if((key===keyBindings.jump||key==="arrowup")&&!event.repeat&&playerGrounded&&currentNumber!==-1){
+        playerVelocityY=currentNumber===4?NUMBER_4_JUMP_POWER:JUMP_POWER;playerGrounded=false;
+        if(currentNumber===4)attackPlayer("jump");else setPlayerAnimation("JUMP",true);
+      }
+      if(key===keyBindings.attack&&!event.repeat)attackPlayer();
+      if((key===keyBindings.previous||key===keyBindings.next)&&!event.repeat&&unlockedNumbers.length>1){
+        const index=unlockedNumbers.indexOf(currentNumber),direction=key===keyBindings.next?1:-1;
+        setNumber(unlockedNumbers[(index+direction+unlockedNumbers.length)%unlockedNumbers.length]);
+      }
+    });
+    document.addEventListener("keyup",event=>{
+      const key=event.key.toLowerCase();
+      if(key===keyBindings.left||key==="arrowleft")keys.left=false;
+      if(key===keyBindings.right||key==="arrowright")keys.right=false;
+    });
+    window.addEventListener("blur",()=>{keys.left=keys.right=false});
+    const BOSS_INTRO_DURATION=.9;
+    function start(){
+      boss6X=GAME.clientWidth*.72;boss7X=GAME.clientWidth*.86;
+      setBossFrame(boss6Element,6,"AltF1");setBossFrame(boss7Element,7,"AltF1");
+      setNumber(1);drawHealth();draw();requestAnimationFrame(gameLoop);
+      window.addEventListener("resize",()=>{boss6X=Math.min(boss6X,GAME.clientWidth-140);boss7X=Math.min(boss7X,GAME.clientWidth-60)});
+    }
+    loadUnlockedNumbers();start();
+  </script>
+</body>
+</html>

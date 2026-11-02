@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIXTYSEVEN — CHAPTER 1</title>
+
+  <style>
+    @font-face {
+      font-family: "Heading";
+      src: url("../Media/Fonts/Heading.ttf") format("truetype");
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: "Heading", sans-serif;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #111;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #GAME {
+      position: relative;
+      width: min(1280px, 100vw);
+      height: min(720px, 100vh);
+      overflow: hidden;
+      background: #181818;
+      border: 2px solid #000;
+    }
+
+    #WORLD {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to bottom, #252525 0%, #171717 65%, #101010 100%);
+    }
+
+    #GROUND {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 90px;
+      background: #080808;
+      border-top: 3px solid #333;
+    }
+
+    /* PLAYER */
+    #PLAYER {
+      position: absolute;
+      left: 50%;
+      bottom: 90px;
+      image-rendering: pixelated;
+      transform: translateX(-50%) scale(0.56) scaleX(-1);
+      transform-origin: bottom center;
+      user-select: none;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    #PROJECTILE {
+      position: absolute;
+      left: 0;
+      bottom: 90px;
+      image-rendering: pixelated;
+      transform: translateX(-50%) scale(1);
+      transform-origin: center;
+      user-select: none;
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    /* HUD: X=NUMBER, THEN HEARTS */
+    #HUD {
+      position: absolute;
+      top: 22px;
+      left: 22px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    #NUMBER-HUD {
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    #NUMBER-CIRCLE {
+      position: relative;
+      width: 82px;
+      height: 87px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #NUMBER-CIRCLE-BACKGROUND {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+      filter: invert(1);
+    }
+
+    #NUMBER-IMAGE {
+      position: absolute;
+      z-index: 1;
+      image-rendering: pixelated;
+      filter: invert(1);
+    }
+
+    #HEALTH {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .HEART {
+      width: 38px;
+      height: 38px;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+  </style>
+</head>
+
+<body>
+  <main id="GAME" aria-label="SIXTYSEVEN CHAPTER 1">
+    <div id="WORLD">
+      <div id="GROUND"></div>
+      <img id="PLAYER" src="../Media/Player/1/1_Still.png" alt="PLAYER">
+      <img id="PROJECTILE" alt="" hidden>
+    </div>
+
+    <div id="HUD">
+      <div id="NUMBER-HUD">
+        <div id="NUMBER-CIRCLE">
+          <img
+            id="NUMBER-CIRCLE-BACKGROUND"
+            src="../Media/Images/0.png"
+            alt=""
+          >
+
+          <img
+            id="NUMBER-IMAGE"
+            src="../Media/Images/1.png"
+            alt=""
+          >
+        </div>
+      </div>
+
+      <div id="HEALTH" aria-label="HEALTH">
+        <img class="HEART" src="../Media/Images/Heart.png" alt="HEART">
+        <img class="HEART" src="../Media/Images/Heart.png" alt="">
+        <img class="HEART" src="../Media/Images/Heart.png" alt="">
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const AVAILABLE_NUMBERS = [-1, 1, 2, 3, 4, 5];
+
+    const PLAYER = document.getElementById("PLAYER");
+    const PROJECTILE = document.getElementById("PROJECTILE");
+    const numberImage = document.getElementById("NUMBER-IMAGE");
+
+    let unlockedNumbers = [1];
+    let currentNumber = 1;
+
+    // ANIMATION
+    const ANIMATION_SPEED = 140;
+    const NUMBER_1_SWING_HOLD = 350; // Hold SwingF2 for half a second on character 1.
+
+    const BASE_ANIMATIONS = {
+      STILL: ["Still"],
+      WALK: ["Still", "WalkF1", "WalkF2", "WalkF1", "WalkF2"],
+      JUMP: ["Jump"],
+      FALL: ["Fall"],
+      SWING: ["Still", "SwingF1", "SwingF2"]
+    };
+
+    let currentAnimation = "STILL";
+    let animationFrame = 0;
+    let animationTimer = 0;
+
+    // MOVEMENT
+    const PLAYER_SPEED = 320;
+    const JUMP_POWER = 700;
+    const NUMBER_4_JUMP_POWER = 1050;
+    const GRAVITY = 1900;
+    const CHARACTER_3_SCALE = 0.56;
+    const CHARACTER_3_ATTACK_FRAME_HEIGHT = 177;
+
+    let playerX = 640;
+    let playerY = 0;
+    let velocityX = 0;
+    let velocityY = 0;
+    let onGround = true;
+    let facing = 1;
+    let dashTime = 0;
+    let invulnerableTime = 0;
+    let dashDirection = 1;
+    let fallFlip = 1;
+    let projectile = null;
+
+    const keys = {
+      left: false,
+      right: false
+    };
+
+    // An action is locked until its animation has completely finished.
+    let actionLocked = false;
+    let attacking = false;
+
+    function ANIMATION_FRAMES(animationName) {
+      if (currentNumber === -1) {
+        if (animationName === "WALK") return ["Walk", "Still"];
+        if (animationName === "DASH") return ["Charge"];
+        return ["Still"];
+      }
+      if (currentNumber === 3) {
+        if (animationName === "STILL") return ["Still"];
+        if (animationName === "WALK") return ["Walk"];
+        if (animationName === "JUMP") return ["Jump"];
+        if (animationName === "FALL") return ["Fall"];
+        if (animationName === "SWING") return ["Swing", "Release"];
+      }
+      if (currentNumber === 4) {
+        if (animationName === "STILL") return ["Still"];
+        if (animationName === "WALK") return ["WalkF1", "WalkF2"];
+        if (animationName === "JUMP") return ["Jump"];
+        if (animationName === "SWING") return ["Sweep", "Sweep", "Sweep", "Sweep"];
+        if (animationName === "FALL") return ["Sweep", "Sweep"];
+      }
+      if (currentNumber === 5) {
+        const bladeActive = projectile && projectile.kind === "number-five";
+        if (animationName === "STILL") return [bladeActive ? "StillAlt" : "Still"];
+        if (animationName === "WALK") {
+          return bladeActive ? ["WalkAlt", "StillAlt"] : ["Walk", "Still"];
+        }
+        if (animationName === "JUMP" || animationName === "FALL") {
+          return bladeActive ? ["StillAlt"] : ["Still"];
+        }
+        if (animationName === "SWING") return ["StillAlt", "StillAlt"];
+      }
+      return BASE_ANIMATIONS[animationName] || ["Still"];
+    }
+
+    function PLAYER_PATH(frameName) {
+      if (currentNumber === -1) {
+        const xFrame = frameName === "Charge" ? "Charge" :
+          frameName === "Walk" ? "Walk" : "Still";
+        return `../Media/Player/-1/-1_${xFrame}.png`;
+      }
+      if (currentNumber >= 3) {
+        return `../Media/Player/${currentNumber}/${currentNumber}_${frameName}.png`;
+      }
+      const spriteNumber = currentNumber;
+      return `../Media/Player/${spriteNumber}/${spriteNumber}_${frameName}.png`;
+    }
+
+    function SET_FRAME(frameName) {
+      PLAYER.src = PLAYER_PATH(frameName);
+    }
+
+    function SET_ANIMATION(animationName, reset = true, force = false) {
+      if (!BASE_ANIMATIONS[animationName] && animationName !== "DASH") return;
+      if (actionLocked && !force) return;
+
+      if (currentAnimation !== animationName || reset) {
+        currentAnimation = animationName;
+        animationFrame = 0;
+        animationTimer = 0;
+        if (currentNumber === 4 && (animationName === "FALL" || animationName === "SWING")) {
+          fallFlip = 1;
+        }
+        SET_FRAME(ANIMATION_FRAMES(currentAnimation)[0]);
+      }
+    }
+
+    function UPDATE_ANIMATION(deltaTime) {
+      const frames = ANIMATION_FRAMES(currentAnimation);
+
+      if (!frames) {
+        SET_FRAME("Still");
+        return;
+      }
+
+      if (frames.length === 1) {
+        SET_FRAME(frames[0]);
+        if (actionLocked && currentAnimation === "SWING") {
+          animationTimer += deltaTime;
+          if (animationTimer < ANIMATION_SPEED) return;
+
+          actionLocked = false;
+          attacking = false;
+          animationTimer = 0;
+          if (!onGround) {
+            SET_ANIMATION(velocityY < 0 ? "JUMP" : "FALL", true, true);
+          } else if (keys.left || keys.right) {
+            SET_ANIMATION("WALK", true, true);
+          } else {
+            SET_ANIMATION("STILL", true, true);
+          }
+        }
+        return;
+      }
+
+      if (frames.length === 0) {
+        SET_FRAME("Still");
+        return;
+      }
+
+      animationTimer += deltaTime;
+
+      // Character 1 pauses on the second sword frame (SwingF2) for 1 second.
+      // Character 2 uses the normal animation speed.
+      const frameDelay =
+        actionLocked &&
+        currentAnimation === "SWING" &&
+        currentNumber === 1 &&
+        animationFrame === 2
+          ? NUMBER_1_SWING_HOLD
+          : currentNumber === 4 &&
+            (currentAnimation === "FALL" || currentAnimation === "SWING")
+            ? ANIMATION_SPEED / 2
+            : ANIMATION_SPEED;
+
+      if (animationTimer < frameDelay) return;
+
+      animationTimer -= frameDelay;
+      animationFrame++;
+      if (currentNumber === 4 &&
+          (currentAnimation === "FALL" || currentAnimation === "SWING")) {
+        fallFlip *= -1;
+      }
+
+      // ATTACK: Still -> SwingF1 -> SwingF2 ONCE.
+      if (actionLocked && currentAnimation === "SWING") {
+        if (animationFrame < frames.length) {
+          SET_FRAME(frames[animationFrame]);
+          return;
+        }
+
+        actionLocked = false;
+        attacking = false;
+        animationFrame = 0;
+        animationTimer = 0;
+
+        if (!onGround) {
+          SET_ANIMATION(velocityY < 0 ? "JUMP" : "FALL", true, true);
+        } else if (keys.left || keys.right) {
+          SET_ANIMATION("WALK", true, true);
+        } else {
+          SET_ANIMATION("STILL", true, true);
+        }
+
+        return;
+      }
+
+      // WALK loops.
+      animationFrame %= frames.length;
+      SET_FRAME(frames[animationFrame]);
+    }
+
+    function SET_NUMBER(number) {
+      if (!unlockedNumbers.includes(number)) return;
+
+      currentNumber = number;
+      numberImage.src = `../Media/Images/${number}.png`;
+      numberImage.alt = `Number ${number}`;
+      numberImage.hidden = false;
+      const iconScale = { "-1": 0.28, "1": 0.2933, "2": 0.32, "3": 0.26, "4": 0.26, "5": 0.30 };
+      const iconOffset = number === 1 || number === 2 ? 20 : 0;
+      numberImage.style.transform =
+        `translate(${iconOffset}px, 3px) scale(${iconScale[number]})`;
+
+      projectile = null;
+      PROJECTILE.hidden = true;
+      dashTime = 0;
+      invulnerableTime = 0;
+      actionLocked = false;
+      attacking = false;
+      const animation = !onGround ? (velocityY < 0 ? "JUMP" : "FALL") :
+        (keys.left || keys.right ? "WALK" : "STILL");
+      SET_ANIMATION(animation, true, true);
+    }
+
+    function LOAD_UNLOCKED_NUMBERS() {
+      const unlocked = [1];
+      try {
+        const savedProgress = JSON.parse(localStorage.getItem("sixtySevenProgress") || "{}");
+        for (const [number, status] of Object.entries(savedProgress.characters || {})) {
+          if (status === "UNLOCKED") unlocked.push(Number(number));
+        }
+        if (localStorage.getItem("chapter1Completed") === "true") {
+          unlocked.push(2);
+        }
+      } catch (error) {
+        console.warn("Saved completion could not be read from browser storage.", error);
+      }
+
+      return AVAILABLE_NUMBERS.filter(number => unlocked.includes(number));
+    }
+
+    async function LOAD_COMPLETION_STATE() {
+      unlockedNumbers = LOAD_UNLOCKED_NUMBERS();
+      if (!unlockedNumbers.includes(currentNumber)) {
+        currentNumber = 1;
+      }
+      SET_NUMBER(currentNumber);
+      return true;
+    }
+
+    async function CHANGE_NUMBER(direction) {
+      // No number switching during an action.
+      if (actionLocked) return;
+
+      const loaded = await LOAD_COMPLETION_STATE();
+
+      if (!loaded || unlockedNumbers.length <= 1) {
+        return;
+      }
+
+      const index = unlockedNumbers.indexOf(currentNumber);
+
+      if (index === -1) {
+        SET_NUMBER(unlockedNumbers[0]);
+        return;
+      }
+
+      const nextIndex =
+        (index + direction + unlockedNumbers.length) %
+        unlockedNumbers.length;
+
+      SET_NUMBER(unlockedNumbers[nextIndex]);
+    }
+
+    function UPDATE_PLAYER(deltaSeconds) {
+      const game = document.getElementById("GAME");
+
+      if (dashTime > 0) {
+        dashTime = Math.max(0, dashTime - deltaSeconds);
+        velocityX = dashDirection * 1050;
+        if (dashTime === 0) {
+          attacking = false;
+          SET_ANIMATION(onGround ? (keys.left || keys.right ? "WALK" : "STILL") :
+            (velocityY < 0 ? "JUMP" : "FALL"), true, true);
+        }
+      } else {
+        velocityX = 0;
+      }
+
+      if (!actionLocked && dashTime === 0) {
+        if (keys.left) {
+          velocityX -= PLAYER_SPEED;
+          facing = -1;
+        }
+        if (keys.right) {
+          velocityX += PLAYER_SPEED;
+          facing = 1;
+        }
+      }
+
+      playerX += velocityX * deltaSeconds;
+      if (invulnerableTime > 0) {
+        invulnerableTime = Math.max(0, invulnerableTime - deltaSeconds);
+        PLAYER.style.opacity = Math.floor(invulnerableTime * 20) % 2 ? "0.35" : "1";
+      } else {
+        PLAYER.style.opacity = "1";
+      }
+      PLAYER.dataset.invulnerable = invulnerableTime > 0 ? "true" : "false";
+
+      const halfPlayerWidth = 50;
+
+      playerX = Math.max(
+        halfPlayerWidth,
+        Math.min(game.clientWidth - halfPlayerWidth, playerX)
+      );
+
+      if (!onGround) {
+        velocityY += GRAVITY * deltaSeconds;
+        playerY += velocityY * deltaSeconds;
+
+        if (!actionLocked && dashTime === 0) {
+          SET_ANIMATION(velocityY < 0 ? "JUMP" : "FALL", false);
+        }
+
+        if (playerY >= 0) {
+          playerY = 0;
+          velocityY = 0;
+          onGround = true;
+
+          if (!actionLocked && dashTime === 0) {
+            if (keys.left || keys.right) {
+              SET_ANIMATION("WALK", false);
+            } else {
+              SET_ANIMATION("STILL", false);
+            }
+          }
+        }
+      } else if (!actionLocked && dashTime === 0) {
+        if (keys.left || keys.right) {
+          SET_ANIMATION("WALK", false);
+        } else if (currentAnimation === "WALK") {
+          SET_ANIMATION("STILL", false);
+        }
+      }
+
+      PLAYER.style.left = `${playerX}px`;
+      PLAYER.style.right = "auto";
+      PLAYER.style.transformOrigin = "bottom center";
+      PLAYER.style.bottom = `${90 - playerY}px`;
+      const fallDirection = currentNumber === 4 &&
+        (currentAnimation === "FALL" || currentAnimation === "SWING")
+        ? fallFlip
+        : 1;
+      PLAYER.style.transform =
+        `translateX(-50%) scale(${CHARACTER_3_SCALE}) scaleX(${(facing > 0 ? -1 : 1) * fallDirection})`;
+
+      UPDATE_PROJECTILE(deltaSeconds);
+    }
+
+    function START_ATTACK() {
+      if (currentNumber === -1) {
+        if (dashTime > 0) return;
+        dashDirection = facing;
+        dashTime = 0.24;
+        invulnerableTime = 0.5;
+        actionLocked = false;
+        attacking = true;
+        SET_ANIMATION("DASH", true, true);
+        return;
+      }
+
+      if (currentNumber === 5) {
+        if (projectile) {
+          playerX = projectile.x;
+          playerY = projectile.y;
+          velocityY = 0;
+          onGround = false;
+          projectile = null;
+          PROJECTILE.hidden = true;
+          SET_ANIMATION("FALL", true, true);
+          return;
+        }
+        projectile = {
+          kind: "number-five",
+          x: playerX + facing * 48,
+          y: playerY - 58,
+          verticalOffset: -20,
+          direction: facing,
+          elapsed: 0,
+          phase: "outbound",
+          pauseTime: 0,
+          rotation: 0
+        };
+        PROJECTILE.src = "../Media/Player/5/5_Alt.png";
+        PROJECTILE.hidden = false;
+      } else if (currentNumber === 3) {
+        projectile = {
+          kind: "arrow",
+          x: playerX,
+          y: playerY,
+          verticalOffset:
+            (CHARACTER_3_ATTACK_FRAME_HEIGHT * CHARACTER_3_SCALE -
+              PROJECTILE.naturalHeight * 1.2) / 2,
+          direction: facing,
+          elapsed: 0,
+          phase: "outbound"
+        };
+        PROJECTILE.src = "../Media/Player/3/3_Arrow.png";
+        PROJECTILE.hidden = false;
+      }
+
+      attacking = true;
+      actionLocked = true;
+      SET_ANIMATION("SWING", true, true);
+    }
+
+    function UPDATE_PROJECTILE(deltaSeconds) {
+      if (!projectile) return;
+
+      projectile.elapsed += deltaSeconds;
+      if (projectile.kind === "arrow") {
+        projectile.x += projectile.direction * 620 * deltaSeconds;
+        if (projectile.elapsed >= 1.3 ||
+            projectile.x < 0 || projectile.x > document.getElementById("GAME").clientWidth) {
+          projectile = null;
+          PROJECTILE.hidden = true;
+          return;
+        }
+      } else if (projectile.phase === "outbound") {
+        projectile.x += projectile.direction * 180 * deltaSeconds;
+        projectile.x = Math.max(
+          50,
+          Math.min(document.getElementById("GAME").clientWidth - 50, projectile.x)
+        );
+        if (projectile.elapsed >= 3) {
+          projectile.phase = "paused";
+          projectile.pauseTime = 0;
+        }
+      } else if (projectile.phase === "paused") {
+        projectile.pauseTime += deltaSeconds;
+        if (projectile.pauseTime >= 0.45) projectile.phase = "returning";
+      } else {
+        const dx = playerX - projectile.x;
+        projectile.x += Math.sign(dx) * 480 * deltaSeconds;
+        if (Math.abs(dx) <= 30) {
+          projectile = null;
+          PROJECTILE.hidden = true;
+          return;
+        }
+      }
+
+      PROJECTILE.style.left = `${projectile.x}px`;
+      PROJECTILE.style.bottom = `${90 - projectile.y + projectile.verticalOffset}px`;
+      if (projectile.kind === "number-five") {
+        projectile.rotation += 540 * deltaSeconds;
+        PROJECTILE.style.transform =
+          `translateX(-50%) scale(0.65) rotate(${projectile.rotation}deg)`;
+      } else {
+        PROJECTILE.style.transform =
+          `translateX(-50%) scale(1.2) scaleX(${projectile.direction})`;
+      }
+    }
+
+    let lastTime = performance.now();
+
+    function GAME_LOOP(time) {
+      const deltaTime = time - lastTime;
+      lastTime = time;
+
+      const deltaSeconds = Math.min(deltaTime / 1000, 0.05);
+
+      UPDATE_PLAYER(deltaSeconds);
+      UPDATE_ANIMATION(deltaTime);
+
+      requestAnimationFrame(GAME_LOOP);
+    }
+
+    function loadKeyBindings() {
+      const defaults = { left: "a", right: "d", jump: "w", attack: " ", previous: "q", next: "e", summon: "s" };
+      try {
+        const saved = JSON.parse(localStorage.getItem("sixtySevenKeyBindings") || "{}");
+        for (const action in defaults) {
+          if (typeof saved[action] === "string" && (saved[action].length === 1 || saved[action] === " ")) {
+            defaults[action] = saved[action].toLowerCase();
+          }
+        }
+      } catch (error) {
+        console.warn("Key bindings could not be loaded; using defaults.", error);
+      }
+      return defaults;
+    }
+    const keyBindings = loadKeyBindings();
+
+    document.addEventListener("keydown", event => {
+      const key = event.key.toLowerCase();
+      if (Object.values(keyBindings).includes(key)) event.preventDefault();
+
+      // Nothing else can start while an action is happening.
+      if (actionLocked) {
+        event.preventDefault();
+        return;
+      }
+
+      if (key === keyBindings.left || key === "arrowleft") {
+        keys.left = true;
+        event.preventDefault();
+      }
+
+      if (key === keyBindings.right || key === "arrowright") {
+        keys.right = true;
+        event.preventDefault();
+      }
+
+      if (
+        (key === keyBindings.jump || key === "arrowup") &&
+        currentNumber !== -1 &&
+        onGround &&
+        !event.repeat
+      ) {
+        velocityY = -(currentNumber === 4 ? NUMBER_4_JUMP_POWER : JUMP_POWER);
+        onGround = false;
+        SET_ANIMATION("JUMP");
+        event.preventDefault();
+      }
+
+      // SPACE = ONE ATTACK.
+      if (key === keyBindings.attack && !event.repeat) {
+        START_ATTACK();
+        event.preventDefault();
+      }
+
+      if (key === keyBindings.previous && !event.repeat) {
+        CHANGE_NUMBER(-1);
+      }
+
+      if (key === keyBindings.next && !event.repeat) {
+        CHANGE_NUMBER(1);
+      }
+    });
+
+    document.addEventListener("keyup", event => {
+      const key = event.key.toLowerCase();
+
+      if (key === keyBindings.left || key === "arrowleft") {
+        keys.left = false;
+      }
+
+      if (key === keyBindings.right || key === "arrowright") {
+        keys.right = false;
+      }
+    });
+
+    SET_ANIMATION("STILL");
+    PLAYER.style.left = `${playerX}px`;
+    PLAYER.style.bottom = "90px";
+
+    LOAD_COMPLETION_STATE();
+    requestAnimationFrame(GAME_LOOP);
+  </script>
+</body>
+</html>

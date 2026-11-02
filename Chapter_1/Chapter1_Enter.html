@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIXTYSEVEN — CHAPTER 1</title>
+  <style>
+    @font-face {
+      font-family: Character;
+      src: url("../Media/Fonts/Peeps.ttf") format("truetype");
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      background: #000;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: #fff;
+      font-family: Character, sans-serif;
+    }
+
+    main {
+      display: grid;
+      justify-items: center;
+      gap: 32px;
+      padding: 24px;
+      width: min(100%, 960px);
+    }
+
+    #CHAPTER-TEXT {
+      width: 100%;
+      max-height: 70vh;
+      overflow-y: auto;
+      margin: 0;
+      font-size: clamp(16px, 2vw, 22px);
+      line-height: 1.8;
+      text-align: left;
+      white-space: pre-line;
+    }
+
+    #CONTINUE {
+      padding: 16px 28px;
+      border: 0;
+      background: transparent;
+      color: #fff;
+      font: 32px Character, sans-serif;
+      cursor: pointer;
+    }
+
+    .BUTTON-ROW {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    #FAST {
+      padding: 16px 28px;
+      border: 0;
+      background: transparent;
+      color: #fff;
+      font: 32px Character, sans-serif;
+      cursor: pointer;
+    }
+
+    #CONTINUE:hover,
+    #CONTINUE:focus-visible {
+      outline: none;
+      text-shadow: 0 0 8px #fff, 0 0 18px #fff;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <p id="CHAPTER-TEXT" aria-live="polite"></p>
+    <div class="BUTTON-ROW">
+      <button id="CONTINUE" type="button">Continue</button>
+      <button id="FAST" type="button" aria-label="Display text 10 times faster">Fast</button>
+    </div>
+  </main>
+  <script>
+    const chapterText = document.getElementById("CHAPTER-TEXT");
+    const lines = [
+      "I received a message from a trusted source, a good friend.",
+      "I was alerted to the existence of something causing the deaths of innocent souls.",
+      "I set out to investigate. As I reached the forest, Number 1 appeared, acting strangely.",
+      "I watched as he screamed \"SIX SEVEN!\" Then he fell... dead.",
+      "I continued my investigation further into the forest.",
+      "- X"
+    ];
+    const text = lines.join("\n\n");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let index = 0;
+    let typingTimer;
+    let isFast = false;
+
+    function typeNextCharacter() {
+      if (index >= text.length) return;
+      chapterText.textContent += text[index++];
+      if (index < text.length) {
+        const delay = text[index - 1] === "\n" ? 280 : 45;
+        typingTimer = window.setTimeout(typeNextCharacter, delay / (isFast ? 10 : 1));
+      }
+    }
+
+    document.getElementById("FAST").addEventListener("click", () => {
+      isFast = true;
+      window.clearTimeout(typingTimer);
+      typeNextCharacter();
+    });
+
+    if (reducedMotion) {
+      chapterText.textContent = text;
+    } else {
+      typeNextCharacter();
+    }
+
+    document.getElementById("CONTINUE").addEventListener("click", () => {
+      window.location.href = "Chapter1.html";
+    });
+  </script>
+</body>
+</html>
