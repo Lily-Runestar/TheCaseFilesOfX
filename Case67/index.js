@@ -42,11 +42,10 @@ function loadProgress() {
     console.error("Game progress could not be loaded.", error);
   }
   defaults.characters["1"] = "UNLOCKED";
-
   defaults.chapters["1"] = "UNLOCKED";
   for (let chapter = 2; chapter <= 7; chapter++) {
-    const previous = defaults.chapters[String(chapter - 1)];
-    if (defaults.chapters[String(chapter)] !== "UNLOCKED" || previous !== "UNLOCKED") {
+    const previousChapter = defaults.chapters[String(chapter - 1)];
+    if (previousChapter !== "UNLOCKED") {
       defaults.chapters[String(chapter)] = "LOCKED";
     }
   }

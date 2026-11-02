@@ -18,6 +18,7 @@
     #cycle{display:flex;justify-content:center;gap:10px;background:#181818;border-top:2px solid #777;padding:20px}
     #cycle button{width:95px;height:95px;background:#292929;border:2px solid #777;color:#fff;font-size:24px}
     #cycle button.exchange{border-color:#ffd700}
+    #cycle button.selected-slot{border-color:#4db8ff;box-shadow:0 0 12px rgba(77,184,255,.65)}
     a.back{color:#fff;background:#292929;border:1px solid #777;padding:10px;text-decoration:none}
   </style>
 </head>
@@ -34,7 +35,7 @@
     const cycleElement = document.getElementById("cycle");
     let settings = loadPlayerSettings();
     let selectedNumber = null;
-    let selectedCycleIndex = 0;
+    let selectedCycleSlot = null;
     let progress;
     try {
       progress = JSON.parse(localStorage.getItem("sixtySevenProgress") || "{}");
@@ -71,12 +72,13 @@
             status.textContent = `${number === -1 ? "-1" : "Number " + number} is locked.`;
             return;
           }
-          if (settings.cycle[selectedCycleIndex] === number) {
+          if (selectedCycleSlot === null) {
             showSkins(number);
           } else {
-            settings.cycle[selectedCycleIndex] = number;
+            settings.cycle[selectedCycleSlot] = number;
             savePlayerSettings(settings);
-            status.textContent = `${number === -1 ? "-1" : "Number " + number} placed in cycle slot ${selectedCycleIndex + 1}.`;
+            status.textContent = `${number === -1 ? "-1" : "Number " + number} replaced cycle slot ${selectedCycleSlot + 1}.`;
+            selectedCycleSlot = null;
             renderCycle();
             showSkins(number);
           }
@@ -136,18 +138,26 @@
       displayedCycle.slice(0, 5).forEach((number, index) => {
         const button = document.createElement("button");
         addCharacterIcon(button, number);
-        button.classList.toggle("exchange", selectedCycleIndex === index);
+        button.classList.toggle("selected-slot", selectedCycleSlot === index);
         button.addEventListener("click", () => {
-          selectedCycleIndex = index;
-          status.textContent = `Cycle slot ${index + 1} selected. Choose a character above or a skin.`;
+          if (selectedCycleSlot === index) {
+            selectedCycleSlot = null;
+            status.textContent = `Choose a skin for ${number === -1 ? "-1" : "Number " + number}.`;
+            renderCycle();
+            renderCharacters();
+            showSkins(number);
+            return;
+          }
+          selectedCycleSlot = index;
+          status.textContent = `Cycle slot ${index + 1} selected. Choose a character above or click this slot again for its skin.`;
           renderCycle();
         });
         cycleElement.appendChild(button);
       });
     }
 
-    renderCharacters();
     renderCycle();
+    renderCharacters();
   </script>
 </body>
 </html>
