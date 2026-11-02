@@ -87,7 +87,7 @@
         for(const [number,state] of Object.entries(progress.characters||{}))if(state==="UNLOCKED")unlocked.push(Number(number));
         if(localStorage.getItem("chapter1Completed")==="true")unlocked.push(2);
       }catch(error){console.warn("Saved character progress could not be read.",error)}
-      unlockedNumbers=getSelectedPlayableNumbers(unlocked);
+      unlockedNumbers=AVAILABLE_NUMBERS.filter(number=>unlocked.includes(number));
       setNumber(unlockedNumbers.includes(currentNumber)?currentNumber:1);
     }
 
