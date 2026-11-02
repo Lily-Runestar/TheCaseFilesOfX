@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controls</title>
+  <style>
+    html,body{min-height:100%;margin:0;background:#111;color:#fff;font-family:Arial,sans-serif}
+    main{width:min(700px,calc(100% - 32px));margin:24px auto}
+    h1{text-align:center}.row{display:grid;grid-template-columns:1fr 120px;align-items:center;border-bottom:1px solid #444;padding:8px}
+    button,a.back{color:#fff;background:#292929;border:1px solid #777;padding:10px;cursor:pointer;text-decoration:none}
+    .top{display:flex;justify-content:space-between;align-items:center}.capturing{background:#777;color:#111}
+    p{min-height:24px;text-align:center;color:#ccc}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="top"><a class="back" href="index.html">BACK</a><h1>CONTROLS</h1><button id="reset">RESET</button></div>
+    <div id="bindings"></div>
+    <p id="status" aria-live="polite">Choose a control, then press any key.</p>
+  </main>
+  <script src="player controls/player-controls.js"></script>
+  <script>
+    const bindingsElement = document.getElementById("bindings");
+    const status = document.getElementById("status");
+    let bindings = loadPlayerBindings();
+    let capturing = null;
+
+    function showBindings() {
+      bindingsElement.innerHTML = "";
+      Object.keys(PLAYER_BINDING_LABELS).forEach((action) => {
+        const row = document.createElement("div");
+        row.className = "row";
+        row.innerHTML = `<span>${PLAYER_BINDING_LABELS[action]}</span>`;
+        const button = document.createElement("button");
+        button.textContent = bindings[action] === " " ? "SPACE" : bindings[action].toUpperCase();
+        button.addEventListener("click", () => {
+          document.querySelectorAll("#bindings button").forEach((item) => item.classList.remove("capturing"));
+          capturing = action;
+          button.classList.add("capturing");
+          button.textContent = "...";
+          status.textContent = `Press a key for ${PLAYER_BINDING_LABELS[action]}.`;
+        });
+        row.appendChild(button);
+        bindingsElement.appendChild(row);
+      });
+    }
+    document.addEventListener("keydown", (event) => {
+      if (!capturing) return;
+      event.preventDefault();
+      const key = event.key.toLowerCase();
+      if (["escape", "enter", "tab"].includes(key)) return;
+      bindings[capturing] = key === " " ? " " : key;
+      localStorage.setItem(PLAYER_BINDINGS_STORAGE_KEY, JSON.stringify(bindings));
+      capturing = null;
+      status.textContent = "Control saved.";
+      showBindings();
+    });
+    document.getElementById("reset").addEventListener("click", () => {
+      bindings = { ...DEFAULT_PLAYER_BINDINGS };
+      localStorage.setItem(PLAYER_BINDINGS_STORAGE_KEY, JSON.stringify(bindings));
+      status.textContent = "Controls reset to defaults.";
+      showBindings();
+    });
+    showBindings();
+  </script>
+</body>
+</html>

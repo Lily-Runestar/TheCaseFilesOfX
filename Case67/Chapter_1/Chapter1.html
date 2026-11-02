@@ -85,7 +85,7 @@ let fallFlip=1;
 
 const PLAYER_SPEED=PLAYER_PROFILE.speed,JUMP_POWER=PLAYER_PROFILE.jumpPower,NUMBER_4_JUMP_POWER=PLAYER_PROFILE.number4JumpPower,GRAVITY=PLAYER_PROFILE.gravity,PLAYER_W=PLAYER_PROFILE.width,PLAYER_H=PLAYER_PROFILE.height,PLAYER_SCALE=PLAYER_PROFILE.scale,GROUND_H=90;
 
-let playerX=100,playerY=0,velocityX=0,velocityY=0,onGround=true,facing=1,cameraX=0,hearts=3,lastTime=performance.now(),invulnerable=0,won=false,dashTime=0,dashDirection=1,projectile=null;
+let playerX=100,playerY=0,velocityX=0,velocityY=0,onGround=true,facing=1,cameraX=0,hearts=getStartingHealth(),lastTime=performance.now(),invulnerable=0,won=false,dashTime=0,dashDirection=1,projectile=null;
 
 let lastSafeX=100,lastSafeY=0;
 
@@ -166,9 +166,9 @@ for(let x=0;x<WORLD_WIDTH;x+=64){
 
 }
 
-function drawHearts(){healthEl.innerHTML="";for(let i=0;i<3;i++){const h=document.createElement("img");h.className="HEART";h.src="../Media/Images/Heart.png";h.alt=i<hearts?"Heart":"Empty heart";h.style.opacity=i<hearts?"1":".2";healthEl.appendChild(h)}}
+function drawHearts(){healthEl.innerHTML="";for(let i=0;i<getStartingHealth();i++){const h=document.createElement("img");h.className="HEART";h.src="../Media/Images/Heart.png";h.alt=i<hearts?"Heart":"Empty heart";h.style.opacity=i<hearts?"1":".2";healthEl.appendChild(h)}}
 
-function PLAYER_PATH(frameName){if(currentNumber===-1){const xFrame=frameName==="Charge"?"Charge":frameName==="Walk"?"Walk":"Still";return `../Media/Player/-1/-1_${xFrame}.png`}return `../Media/Player/${currentNumber}/${currentNumber}_${frameName}.png`}
+function PLAYER_PATH(frameName){if(currentNumber===-1){const xFrame=frameName==="Charge"?"Charge":frameName==="Walk"?"Walk":"Still";return playerSpritePath(-1, xFrame)}return playerSpritePath(currentNumber, frameName)}
 
 function SET_FRAME(frameName){const src=PLAYER_PATH(frameName);if(!PLAYER.src.endsWith(src))PLAYER.src=src}
 
@@ -357,7 +357,7 @@ document.addEventListener("keydown",e=>{const k=e.key.toLowerCase();if(["arrowle
 
  if(k===KEY_BINDINGS.attack&&!e.repeat)START_ATTACK();
 
- if(k===KEY_BINDINGS.previous&&!e.repeat)CHANGE_NUMBER(-1);if(k===KEY_BINDINGS.next&&!e.repeat)CHANGE_NUMBER(1);
+ if(k===KEY_BINDINGS.previous&&!e.repeat)CHANGE_NUMBER(-1);if(k===KEY_BINDINGS.next&&!e.repeat)CHANGE_NUMBER(1);for(let i=1;i<=5;i++){if(!e.repeat&&k===KEY_BINDINGS["number"+i]){const cycle=loadPlayerSettings().cycle;SET_NUMBER(cycle[i-1]??[1,2,3,4,5][i-1]);}}
 });
 
 document.addEventListener("keyup",e=>{const k=e.key.toLowerCase();if(k===KEY_BINDINGS.left||k==="arrowleft")keys.left=false;if(k===KEY_BINDINGS.right||k==="arrowright")keys.right=false});

@@ -286,7 +286,7 @@
       "4": { jump: 1, space: 2 },
       "5": { outbound: 1, returning: 3 }
     };
-    const PLAYER_MAX_HEALTH = 3;
+    const PLAYER_MAX_HEALTH = 5;
     const ENEMY_MAX_HEALTH = 30;
     const BATTLE_MIN_ENEMIES_FOR_VICTORY = 8;
     const BATTLE_MAX_FRIENDS = 6;
@@ -361,10 +361,10 @@
       if (currentNumber === -1) {
         const xFrame = frame === "Charge" ? "Charge" :
           frame === "Walk" ? "Walk" : "Still";
-        return `../Media/Player/-1/-1_${xFrame}.png`;
+        return playerSpritePath(-1, xFrame);
       }
       const spriteNumber = currentNumber;
-      return `../Media/Player/${spriteNumber}/${spriteNumber}_${frame}.png`;
+      return playerSpritePath(spriteNumber, frame);
     }
 
     function playerAnimationFrames(name) {

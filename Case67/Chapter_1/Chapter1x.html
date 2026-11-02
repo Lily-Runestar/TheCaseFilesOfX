@@ -270,13 +270,13 @@
       if (currentNumber === -1) {
         const xFrame = frameName === "Charge" ? "Charge" :
           frameName === "Walk" ? "Walk" : "Still";
-        return `../Media/Player/-1/-1_${xFrame}.png`;
+        return playerSpritePath(-1, xFrame);
       }
       if (currentNumber >= 3) {
-        return `../Media/Player/${currentNumber}/${currentNumber}_${frameName}.png`;
+        return playerSpritePath(currentNumber, frameName);
       }
       const spriteNumber = currentNumber;
-      return `../Media/Player/${spriteNumber}/${spriteNumber}_${frameName}.png`;
+      return playerSpritePath(spriteNumber, frameName);
     }
 
     function SET_FRAME(frameName) {

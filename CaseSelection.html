@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Case Selection</title>
+  <style>
+    html,body{min-height:100%;margin:0;background:#111;color:#fff;font-family:Arial,sans-serif}
+    main{width:min(900px,calc(100% - 32px));margin:24px auto;text-align:center}
+    #cases{display:flex;flex-wrap:wrap;justify-content:center;gap:16px}
+    .case{min-width:180px;padding:24px;background:#292929;border:1px solid #777;cursor:pointer}
+    .difficulty{position:fixed;left:0;right:0;bottom:0;background:#181818;border-top:2px solid #777;padding:16px}
+    button,a.back{color:#fff;background:#292929;border:1px solid #777;padding:10px 18px;cursor:pointer;text-decoration:none}
+    button.selected{background:#777;color:#111}
+    .controls{position:absolute;left:16px;top:16px}
+  </style>
+</head>
+<body>
+  <a class="back controls" href="index.html">BACK</a>
+  <main>
+    <h1>SELECT CASE</h1>
+    <div id="cases"></div>
+  </main>
+  <div class="difficulty" aria-label="Difficulty">
+    <button data-difficulty="easy">EASY</button>
+    <button data-difficulty="medium">MEDIUM</button>
+    <button data-difficulty="hard">HARD</button>
+  </div>
+  <script src="player controls/player-controls.js"></script>
+  <script>
+    const casesElement = document.getElementById("cases");
+    const settings = loadPlayerSettings();
+    let difficulty = settings.difficulty;
+
+    async function discoverCases() {
+      const cases = ["Case67"];
+      try {
+        const response = await fetch("./");
+        const html = await response.text();
+        const documentFromListing = new DOMParser().parseFromString(html, "text/html");
+        documentFromListing.querySelectorAll("a[href]").forEach((link) => {
+          const match = decodeURIComponent(link.getAttribute("href")).match(/^([^/?]+Case[^/?]*)\/?/);
+          if (match && match[1].startsWith("Case") && !cases.includes(match[1])) cases.push(match[1]);
+        });
+      } catch (error) {
+        console.warn("Case directory listing is unavailable.", error);
+      }
+      return cases;
+    }
+
+    function renderCases(cases) {
+      casesElement.innerHTML = "";
+      cases.forEach((folder) => {
+        const button = document.createElement("button");
+        button.className = "case";
+        button.textContent = folder.replace(/^Case/, "CASE ");
+        button.addEventListener("click", () => {
+          settings.difficulty = difficulty;
+          savePlayerSettings(settings);
+          window.location.href = `${folder}/index.html`;
+        });
+        casesElement.appendChild(button);
+      });
+    }
+
+    document.querySelectorAll("[data-difficulty]").forEach((button) => {
+      button.addEventListener("click", () => {
+        difficulty = button.dataset.difficulty;
+        document.querySelectorAll("[data-difficulty]").forEach((item) => item.classList.toggle("selected", item === button));
+      });
+      button.classList.toggle("selected", button.dataset.difficulty === difficulty);
+    });
+    discoverCases().then(renderCases);
+  </script>
+</body>
+</html>

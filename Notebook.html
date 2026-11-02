@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notebook</title>
+  <style>
+    html,body{height:100%;margin:0;background:#111;color:#fff;font-family:Arial,sans-serif}
+    main{width:min(800px,calc(100% - 32px));margin:24px auto}
+    a{color:#fff;background:#292929;border:1px solid #777;padding:10px;text-decoration:none}
+    textarea{box-sizing:border-box;width:100%;height:70vh;margin-top:20px;padding:16px;background:#d8c79a;color:#222;font:18px Georgia,serif}
+  </style>
+</head>
+<body>
+  <main>
+    <a href="index.html">BACK</a>
+    <textarea id="notes" aria-label="Case notes"></textarea>
+  </main>
+  <script>
+    const notes = document.getElementById("notes");
+    notes.value = localStorage.getItem("sixtySevenNotebook") || "";
+    notes.addEventListener("input", () => localStorage.setItem("sixtySevenNotebook", notes.value));
+  </script>
+</body>
+</html>
