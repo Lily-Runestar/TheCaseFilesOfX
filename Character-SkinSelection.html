@@ -12,6 +12,7 @@
     #characters{display:flex;justify-content:center;gap:8px;padding-top:8px}
     #characters button{min-width:48px;padding:10px;color:#fff;background:#292929;border:1px solid #777;cursor:pointer}
     #characters button.locked{opacity:.45}
+    #characters button img,#cycle button img{width:34px;height:34px;object-fit:contain}
     .skin{width:150px;height:180px;background:#292929;border:2px solid #777;color:#fff}
     .skin img{width:110px;height:110px;object-fit:contain}
     #cycle{display:flex;justify-content:center;gap:10px;background:#181818;border-top:2px solid #777;padding:20px}
@@ -32,8 +33,8 @@
     const skinsElement = document.getElementById("skins");
     const cycleElement = document.getElementById("cycle");
     let settings = loadPlayerSettings();
-    let exchangeIndex = null;
     let selectedNumber = null;
+    let selectedCycleIndex = 0;
     let progress;
     try {
       progress = JSON.parse(localStorage.getItem("sixtySevenProgress") || "{}");
@@ -47,19 +48,38 @@
       return number === 1 || progress.characters[String(number)] === "UNLOCKED";
     }
 
+    function addCharacterIcon(button, number) {
+      if (number !== -1) {
+        button.textContent = number;
+        return;
+      }
+      const icon = document.createElement("img");
+      icon.src = "Case67/Media/Images/-1.png";
+      icon.alt = "-1";
+      button.appendChild(icon);
+    }
+
     function renderCharacters() {
       const charactersElement = document.getElementById("characters");
       charactersElement.innerHTML = "";
       [-1, 1, 2, 3, 4, 5].forEach((number) => {
         const button = document.createElement("button");
-        button.textContent = number === -1 ? "X" : number;
+        addCharacterIcon(button, number);
         button.classList.toggle("locked", !isCharacterUnlocked(number));
         button.addEventListener("click", () => {
           if (!isCharacterUnlocked(number)) {
-            status.textContent = `${number === -1 ? "X" : "Number " + number} is locked.`;
+            status.textContent = `${number === -1 ? "-1" : "Number " + number} is locked.`;
             return;
           }
-          showSkins(number);
+          if (settings.cycle[selectedCycleIndex] === number) {
+            showSkins(number);
+          } else {
+            settings.cycle[selectedCycleIndex] = number;
+            savePlayerSettings(settings);
+            status.textContent = `${number === -1 ? "-1" : "Number " + number} placed in cycle slot ${selectedCycleIndex + 1}.`;
+            renderCycle();
+            showSkins(number);
+          }
         });
         charactersElement.appendChild(button);
       });
@@ -91,7 +111,7 @@
     async function showSkins(number) {
       selectedNumber = number;
       skinsElement.innerHTML = "";
-      status.textContent = `Choose a skin for ${number === -1 ? "X" : "Number " + number}`;
+      status.textContent = `Choose a skin for ${number === -1 ? "-1" : "Number " + number}`;
       (await skinFolders(number)).forEach((folder) => {
         const button = document.createElement("button");
         button.className = "skin";
@@ -102,7 +122,7 @@
         button.addEventListener("click", () => {
           settings.skins[String(number)] = folder;
           savePlayerSettings(settings);
-          status.textContent = `${number === -1 ? "X" : "Number " + number}: ${folder}`;
+          status.textContent = `${number === -1 ? "-1" : "Number " + number}: ${folder}`;
           showSkins(number);
         });
         skinsElement.appendChild(button);
@@ -115,33 +135,18 @@
       while (displayedCycle.length < 5) displayedCycle.push([1, 2, 3, 4, 5][displayedCycle.length]);
       displayedCycle.slice(0, 5).forEach((number, index) => {
         const button = document.createElement("button");
-        button.textContent = number === -1 ? "X" : number;
-        button.classList.toggle("exchange", exchangeIndex === index);
+        addCharacterIcon(button, number);
+        button.classList.toggle("exchange", selectedCycleIndex === index);
         button.addEventListener("click", () => {
-          if (exchangeIndex !== null) {
-            if (exchangeIndex !== index) {
-              [settings.cycle[exchangeIndex], settings.cycle[index]] = [settings.cycle[index], settings.cycle[exchangeIndex]];
-              savePlayerSettings(settings);
-              exchangeIndex = null;
-              status.textContent = "Cycle order updated.";
-              renderCycle();
-              renderCharacters();
-            } else {
-              exchangeIndex = null;
-              status.textContent = `Choose a skin for ${number === -1 ? "X" : "Number " + number}.`;
-              renderCycle();
-              showSkins(number);
-            }
-            } else {
-              exchangeIndex = index;
-              status.textContent = `Click another cycle slot to swap, or click again to choose a skin.`;
-              renderCycle();
-          }
+          selectedCycleIndex = index;
+          status.textContent = `Cycle slot ${index + 1} selected. Choose a character above or a skin.`;
+          renderCycle();
         });
         cycleElement.appendChild(button);
       });
     }
 
+    renderCharacters();
     renderCycle();
   </script>
 </body>

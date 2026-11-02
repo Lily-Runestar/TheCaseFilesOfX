@@ -34,7 +34,8 @@ const PLAYER_SETTINGS_KEY = "sixtySevenPlayerSettings";
 const DEFAULT_PLAYER_SETTINGS = Object.freeze({
   cycle: [-1, 1, 2, 3, 4],
   skins: { "-1": "Standard", "1": "Standard", "2": "Standard", "3": "Standard", "4": "Standard", "5": "Standard" },
-  difficulty: "easy"
+  difficulty: "easy",
+  hell: false
 });
 
 function loadPlayerSettings() {
@@ -44,11 +45,12 @@ function loadPlayerSettings() {
     return {
       cycle: cycle.length ? [...cycle] : [...DEFAULT_PLAYER_SETTINGS.cycle],
       skins: { ...DEFAULT_PLAYER_SETTINGS.skins, ...(saved.skins && typeof saved.skins === "object" ? saved.skins : {}) },
-      difficulty: ["easy", "medium", "hard"].includes(saved.difficulty) ? saved.difficulty : "easy"
+      difficulty: ["easy", "medium", "hard"].includes(saved.difficulty) ? saved.difficulty : "easy",
+      hell: saved.hell === true
     };
   } catch (error) {
     console.warn("Player settings could not be loaded.", error);
-    return { cycle: [...DEFAULT_PLAYER_SETTINGS.cycle], skins: { ...DEFAULT_PLAYER_SETTINGS.skins }, difficulty: "easy" };
+    return { cycle: [...DEFAULT_PLAYER_SETTINGS.cycle], skins: { ...DEFAULT_PLAYER_SETTINGS.skins }, difficulty: "easy", hell: false };
   }
 }
 
@@ -59,7 +61,8 @@ function savePlayerSettings(settings) {
 function getStartingHealth() {
   const queryHealth = Number(new URLSearchParams(window.location.search).get("hp"));
   if (Number.isInteger(queryHealth) && queryHealth > 0) return Math.min(queryHealth, 5);
-  return { easy: 5, medium: 4, hard: 3 }[loadPlayerSettings().difficulty] || 5;
+  const settings = loadPlayerSettings();
+  return settings.hell ? 1 : { easy: 5, medium: 4, hard: 3 }[settings.difficulty] || 5;
 }
 
 function playerSpritePath(number, frameName) {
