@@ -9,6 +9,9 @@
     main{height:100%;display:grid;grid-template-rows:auto 1fr 150px}
     header{padding:12px;text-align:center}.back{position:absolute;left:16px;top:16px}
     #skins{display:flex;flex-wrap:wrap;justify-content:center;align-content:center;gap:18px;padding:20px}
+    #characters{display:flex;justify-content:center;gap:8px;padding-top:8px}
+    #characters button{min-width:48px;padding:10px;color:#fff;background:#292929;border:1px solid #777;cursor:pointer}
+    #characters button.locked{opacity:.45}
     .skin{width:150px;height:180px;background:#292929;border:2px solid #777;color:#fff}
     .skin img{width:110px;height:110px;object-fit:contain}
     #cycle{display:flex;justify-content:center;gap:10px;background:#181818;border-top:2px solid #777;padding:20px}
@@ -19,7 +22,7 @@
 </head>
 <body>
   <main>
-    <header><a class="back" href="index.html">BACK</a><h1>CHARACTERS / SKINS</h1><p id="status"></p></header>
+    <header><a class="back" href="index.html">BACK</a><h1>CHARACTERS / SKINS</h1><div id="characters"></div><p id="status"></p></header>
     <div id="skins"></div>
     <div id="cycle" aria-label="Number cycle"></div>
   </main>
@@ -31,15 +34,57 @@
     let settings = loadPlayerSettings();
     let exchangeIndex = null;
     let selectedNumber = null;
+    let progress;
+    try {
+      progress = JSON.parse(localStorage.getItem("sixtySevenProgress") || "{}");
+    } catch (error) {
+      progress = {};
+    }
+    progress.characters = progress.characters || {};
+    progress.characters["1"] = "UNLOCKED";
+
+    function isCharacterUnlocked(number) {
+      return number === 1 || progress.characters[String(number)] === "UNLOCKED";
+    }
+
+    function renderCharacters() {
+      const charactersElement = document.getElementById("characters");
+      charactersElement.innerHTML = "";
+      [-1, 1, 2, 3, 4, 5].forEach((number) => {
+        const button = document.createElement("button");
+        button.textContent = number === -1 ? "X" : number;
+        button.classList.toggle("locked", !isCharacterUnlocked(number));
+        button.addEventListener("click", () => {
+          if (!isCharacterUnlocked(number)) {
+            status.textContent = `${number === -1 ? "X" : "Number " + number} is locked.`;
+            return;
+          }
+          showSkins(number);
+        });
+        charactersElement.appendChild(button);
+      });
+    }
 
     async function skinFolders(number) {
+      const knownFolders = {
+        "-1": ["Standard", "Extra"],
+        "1": ["Standard", "Christmas"],
+        "2": ["Standard", "Exrtra"],
+        "3": ["Standard", "Extra"],
+        "4": ["Standard", "Extra"],
+        "5": ["Standard", "Extra"]
+      };
       try {
         const response = await fetch(`Case67/Media/Player/${number}/`);
+        if (!response.ok) return knownFolders[String(number)] || ["Standard"];
         const html = await response.text();
-        const folders = [...html.matchAll(/href="([^"]+)\/"/gi)].map((match) => decodeURIComponent(match[1].replace(/\/$/, ""))).filter((name) => name !== "../");
-        return folders.length ? folders : ["Standard"];
+        const documentFromListing = new DOMParser().parseFromString(html, "text/html");
+        const folders = [...documentFromListing.querySelectorAll("a[href]")]
+          .map((link) => decodeURIComponent(link.getAttribute("href").replace(/\/$/, "")))
+          .filter((name) => name && name !== ".." && !name.includes("."));
+        return folders.length ? folders : knownFolders[String(number)] || ["Standard"];
       } catch (error) {
-        return ["Standard"];
+        return knownFolders[String(number)] || ["Standard"];
       }
     }
 
@@ -80,6 +125,7 @@
               exchangeIndex = null;
               status.textContent = "Cycle order updated.";
               renderCycle();
+              renderCharacters();
             } else {
               exchangeIndex = null;
               status.textContent = `Choose a skin for ${number === -1 ? "X" : "Number " + number}.`;

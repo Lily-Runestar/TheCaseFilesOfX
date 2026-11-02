@@ -39,7 +39,7 @@
         const html = await response.text();
         const documentFromListing = new DOMParser().parseFromString(html, "text/html");
         documentFromListing.querySelectorAll("a[href]").forEach((link) => {
-          const match = decodeURIComponent(link.getAttribute("href")).match(/^([^/?]+Case[^/?]*)\/?/);
+          const match = decodeURIComponent(link.getAttribute("href")).match(/^([^/?]*Case[^/?]*)\/?$/i);
           if (match && match[1].startsWith("Case") && !cases.includes(match[1])) cases.push(match[1]);
         });
       } catch (error) {
@@ -57,7 +57,8 @@
         button.addEventListener("click", () => {
           settings.difficulty = difficulty;
           savePlayerSettings(settings);
-          window.location.href = `${folder}/index.html`;
+          const startingHealth = { easy: 5, medium: 4, hard: 3 }[difficulty];
+          window.location.href = `${folder}/index.html?hp=${startingHealth}`;
         });
         casesElement.appendChild(button);
       });

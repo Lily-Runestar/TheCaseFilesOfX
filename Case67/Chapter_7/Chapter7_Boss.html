@@ -32,7 +32,7 @@
   <main id="GAME" aria-label="Chapter 7 boss arena">
     <section id="ARENA">
       <div id="GROUND"></div>
-      <img id="PLAYER" class="fighter" src="../Media/Player/1/1_Still.png" alt="Player">
+      <img id="PLAYER" class="fighter" src="../Media/Player/1/Standard/1_Still.png" alt="Player">
       <img id="BOSS-6" class="fighter boss" src="../Media/Enemy/6/6_Still.png" alt="Number 6">
       <img id="BOSS-7" class="fighter boss" src="../Media/Enemy/7/7_Still.png" alt="Number 7">
       <img id="PLAYER-PROJECTILE" alt="" hidden>
@@ -178,13 +178,13 @@
       }
       if(currentNumber===3){
         playerProjectile={kind:"arrow",x:playerX+playerFacing*45,y:playerY+48,direction:playerFacing,elapsed:0};
-        projectileElement.src="../Media/Player/3/3_Arrow.png";projectileElement.hidden=false;
+        projectileElement.src="../Media/Player/3/Standard/3_Arrow.png";projectileElement.hidden=false;
       }else if(currentNumber===5){
         playerProjectile={
           kind:"blade",x:playerX+playerFacing*42,y:playerY+50,direction:playerFacing,elapsed:0,
           phase:"outbound",phaseTime:0,outboundHits:new Set(),returnHits:new Set(),rotation:0
         };
-        projectileElement.src="../Media/Player/5/5_Alt.png";projectileElement.hidden=false;
+        projectileElement.src="../Media/Player/5/Standard/5_Alt.png";projectileElement.hidden=false;
       }
     }
     function updateProjectile(dt){

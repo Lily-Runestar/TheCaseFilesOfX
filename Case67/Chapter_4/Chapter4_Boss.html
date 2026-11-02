@@ -206,7 +206,7 @@
   <main id="GAME" aria-label="Fight Number 4">
     <div id="ARENA">
       <div id="GROUND"></div>
-      <img id="PLAYER" src="../Media/Player/1/1_Still.png" alt="Player">
+      <img id="PLAYER" src="../Media/Player/1/Standard/1_Still.png" alt="Player">
       <img id="ENEMY" src="../Media/Enemy/4/4_Still.png" alt="Number 4">
       <img id="PLAYER-PROJECTILE" alt="" hidden>
     </div>
@@ -540,7 +540,7 @@
           direction: playerFacing,
           elapsed: 0
         };
-        projectileElement.src = "../Media/Player/3/3_Arrow.png";
+        projectileElement.src = "../Media/Player/3/Standard/3_Arrow.png";
         projectileElement.hidden = false;
       } else if (currentNumber === 5) {
         playerProjectile = {
@@ -555,7 +555,7 @@
           returnHit: false,
           rotation: 0
         };
-        projectileElement.src = "../Media/Player/5/5_Alt.png";
+        projectileElement.src = "../Media/Player/5/Standard/5_Alt.png";
         projectileElement.hidden = false;
       } else if (currentNumber === -1) {
         playerDashTime = 0.24;
@@ -692,7 +692,7 @@
         : "BATTLE-UNIT";
       element.alt = side === 1 ? "Number 1 ally" : "Number 0 enemy";
       element.src = side === 1
-        ? "../Media/Player/1/1_WalkF1.png"
+        ? "../Media/Player/1/Standard/1_WalkF1.png"
         : "../Media/Enemy/0/0_WalkF1.png";
       battleLane.appendChild(element);
       const laneWidth = battleLane.clientWidth;
@@ -746,8 +746,8 @@
           unit.animationTimer = 0;
           unit.element.src = unit.side === 1
             ? (unit.element.src.endsWith("1_WalkF1.png")
-              ? "../Media/Player/1/1_WalkF2.png"
-              : "../Media/Player/1/1_WalkF1.png")
+              ? "../Media/Player/1/Standard/1_WalkF2.png"
+              : "../Media/Player/1/Standard/1_WalkF1.png")
             : (unit.element.src.endsWith("0_WalkF1.png")
               ? "../Media/Enemy/0/0_WalkF2.png"
               : "../Media/Enemy/0/0_WalkF1.png");

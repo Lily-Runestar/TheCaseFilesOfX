@@ -59,7 +59,7 @@ body{display:flex;align-items:center;justify-content:center}
 
 <main id="GAME" aria-label="SIXTYSEVEN CHAPTER 2 adventure">
 
-<div id="WORLD"><div id="SCENERY"><div id="GROUND"></div></div><img id="PLAYER" src="../Media/Player/1/1_Still.png" alt="Player"><img id="PROJECTILE" alt="" hidden></div>
+<div id="WORLD"><div id="SCENERY"><div id="GROUND"></div></div><img id="PLAYER" src="../Media/Player/1/Standard/1_Still.png" alt="Player"><img id="PROJECTILE" alt="" hidden></div>
 <div id="MESSAGE" aria-live="polite"></div>
 <div id="HUD"><div id="NUMBER-CIRCLE"><img id="NUMBER-CIRCLE-BACKGROUND" src="../Media/Images/0.png" alt=""><img id="NUMBER-IMAGE" src="../Media/Images/1.png" alt="Number 1"></div><div id="HEALTH" aria-label="Health"></div></div>
 
@@ -270,10 +270,10 @@ function START_ATTACK(){
       projectile=null;PROJECTILE.hidden=true;SET_ANIMATION("FALL",true,true);return
     }
     projectile={kind:"number-five",x:playerX+facing*48,y:playerY,verticalOffset:-20,direction:facing,elapsed:0,phase:"outbound",pauseTime:0,rotation:0};
-    PROJECTILE.src="../Media/Player/5/5_Alt.png";PROJECTILE.hidden=false
+    PROJECTILE.src="../Media/Player/5/Standard/5_Alt.png";PROJECTILE.hidden=false
   }else if(currentNumber===3){
     projectile={kind:"arrow",x:playerX,y:playerY,verticalOffset:(177*PLAYER_SCALE-PROJECTILE.naturalHeight*1.2)/2,direction:facing,elapsed:0};
-    PROJECTILE.src="../Media/Player/3/3_Arrow.png";PROJECTILE.hidden=false
+    PROJECTILE.src="../Media/Player/3/Standard/3_Arrow.png";PROJECTILE.hidden=false
   }
   attacking=true;actionLocked=true;SET_ANIMATION("SWING",true,true)
 }

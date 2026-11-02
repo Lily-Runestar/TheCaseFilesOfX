@@ -65,7 +65,7 @@ body{display:flex;align-items:center;justify-content:center}
 
 <main id="GAME" aria-label="SIXTYSEVEN CHAPTER 5 adventure">
 
-<div id="WORLD"><div id="SCENERY"><div id="GROUND"></div></div><img id="PLAYER" src="../Media/Player/1/1_Still.png" alt="Player"><img id="PROJECTILE" alt="" hidden></div>
+<div id="WORLD"><div id="SCENERY"><div id="GROUND"></div></div><img id="PLAYER" src="../Media/Player/1/Standard/1_Still.png" alt="Player"><img id="PROJECTILE" alt="" hidden></div>
 <div id="MESSAGE" aria-live="polite"></div>
 <div id="HUD"><div id="NUMBER-CIRCLE"><img id="NUMBER-CIRCLE-BACKGROUND" src="../Media/Images/0.png" alt=""><img id="NUMBER-IMAGE" src="../Media/Images/1.png" alt="Number 1"></div><div id="HEALTH" aria-label="Health"></div></div>
 <section id="BATTLE" aria-label="Automatic battle lane">
@@ -191,7 +191,7 @@ function createBattleUnit(side){
   const element=document.createElement("img");
   element.className=side===1?"BATTLE-UNIT BATTLE-UNIT-ALLY":"BATTLE-UNIT";
   element.alt=side===1?"Number 1 ally":"Number 0 enemy";
-  element.src=side===1?"../Media/Player/1/1_WalkF1.png":"../Media/Enemy/0/0_WalkF1.png";
+  element.src=side===1?"../Media/Player/1/Standard/1_WalkF1.png":"../Media/Enemy/0/0_WalkF1.png";
   battleLane.appendChild(element);
   const laneWidth=battleLane.clientWidth;
   const unit={side,x:side===1?28:laneWidth-28,hp:side===1?3:2,attackTimer:0.45,animationTimer:0,element};
@@ -234,7 +234,7 @@ function updateBattle(dt){
     if(unit.animationTimer>=0.42){
       unit.animationTimer=0;
       unit.element.src=unit.side===1
-        ?(unit.element.src.endsWith("1_WalkF1.png")?"../Media/Player/1/1_WalkF2.png":"../Media/Player/1/1_WalkF1.png")
+        ?(unit.element.src.endsWith("1_WalkF1.png")?"../Media/Player/1/Standard/1_WalkF2.png":"../Media/Player/1/Standard/1_WalkF1.png")
         :(unit.element.src.endsWith("0_WalkF1.png")?"../Media/Enemy/0/0_WalkF2.png":"../Media/Enemy/0/0_WalkF1.png")
     }
     const target=battleUnits
@@ -370,10 +370,10 @@ function START_ATTACK(){
       projectile=null;PROJECTILE.hidden=true;SET_ANIMATION("FALL",true,true);return
     }
     projectile={kind:"number-five",x:playerX+facing*48,y:playerY,verticalOffset:-20,direction:facing,elapsed:0,phase:"outbound",pauseTime:0,rotation:0};
-    PROJECTILE.src="../Media/Player/5/5_Alt.png";PROJECTILE.hidden=false
+    PROJECTILE.src="../Media/Player/5/Standard/5_Alt.png";PROJECTILE.hidden=false
   }else if(currentNumber===3){
     projectile={kind:"arrow",x:playerX,y:playerY,verticalOffset:(177*PLAYER_SCALE-PROJECTILE.naturalHeight*1.2)/2,direction:facing,elapsed:0};
-    PROJECTILE.src="../Media/Player/3/3_Arrow.png";PROJECTILE.hidden=false
+    PROJECTILE.src="../Media/Player/3/Standard/3_Arrow.png";PROJECTILE.hidden=false
   }
   attacking=true;actionLocked=true;SET_ANIMATION("SWING",true,true)
 }

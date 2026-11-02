@@ -170,7 +170,7 @@
   <main id="GAME" aria-label="Fight Number 2">
     <div id="ARENA">
       <div id="GROUND"></div>
-      <img id="PLAYER" src="../Media/Player/1/1_Still.png" alt="Player">
+      <img id="PLAYER" src="../Media/Player/1/Standard/1_Still.png" alt="Player">
       <img id="ENEMY" src="../Media/Enemy/2/2_Still.png" alt="Number 2">
       <img id="PLAYER-PROJECTILE" alt="" hidden>
     </div>
@@ -539,7 +539,7 @@
           direction: playerFacing,
           elapsed: 0
         };
-        projectileElement.src = "../Media/Player/3/3_Arrow.png";
+        projectileElement.src = "../Media/Player/3/Standard/3_Arrow.png";
         projectileElement.hidden = false;
       } else if (currentNumber === 5) {
         playerProjectile = {
@@ -554,7 +554,7 @@
           returnHit: false,
           rotation: 0
         };
-        projectileElement.src = "../Media/Player/5/5_Alt.png";
+        projectileElement.src = "../Media/Player/5/Standard/5_Alt.png";
         projectileElement.hidden = false;
       } else if (currentNumber === -1) {
         playerDashTime = 0.24;
