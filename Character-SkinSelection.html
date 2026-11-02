@@ -55,7 +55,7 @@
         return;
       }
       const icon = document.createElement("img");
-      icon.src = "Case67/Media/Images/-1.png";
+      icon.src = "Media/Images/-1.png";
       icon.alt = "-1";
       button.appendChild(icon);
     }
@@ -97,7 +97,7 @@
         "5": ["Standard", "Extra"]
       };
       try {
-        const response = await fetch(`Case67/Media/Player/${number}/`);
+        const response = await fetch(`Media/Player/${number}/`);
         if (!response.ok) return knownFolders[String(number)] || ["Standard"];
         const html = await response.text();
         const documentFromListing = new DOMParser().parseFromString(html, "text/html");
@@ -119,7 +119,7 @@
         button.className = "skin";
         button.innerHTML = `<img alt=""><div>${folder}</div>`;
         const preview = button.querySelector("img");
-        preview.src = `Case67/Media/Player/${number}/${folder}/${number}_Still.png`;
+        preview.src = `Media/Player/${number}/${folder}/${number}_Still.png`;
         preview.onerror = () => { preview.style.display = "none"; };
         button.addEventListener("click", () => {
           settings.skins[String(number)] = folder;

@@ -12,7 +12,7 @@
 
 <style>
 
-@font-face{font-family:Heading;src:url("../Media/Fonts/Heading.ttf") format("truetype")}
+@font-face{font-family:Heading;src:url("../../Media/Fonts/Heading.ttf") format("truetype")}
 
 *{box-sizing:border-box;font-family:Heading,sans-serif}
 
@@ -59,9 +59,9 @@ body{display:flex;align-items:center;justify-content:center}
 
 <main id="GAME" aria-label="SIXTYSEVEN CHAPTER 1 adventure">
 
-<div id="WORLD"><div id="SCENERY"><div id="GROUND"></div></div><img id="PLAYER" src="../Media/Player/1/Standard/1_Still.png" alt="Player"><img id="PROJECTILE" alt="" hidden></div>
+<div id="WORLD"><div id="SCENERY"><div id="GROUND"></div></div><img id="PLAYER" src="../../Media/Player/1/Standard/1_Still.png" alt="Player"><img id="PROJECTILE" alt="" hidden></div>
 <div id="MESSAGE" aria-live="polite"></div>
-<div id="HUD"><div id="NUMBER-CIRCLE"><img id="NUMBER-CIRCLE-BACKGROUND" src="../Media/Images/0.png" alt=""><img id="NUMBER-IMAGE" src="../Media/Images/1.png" alt="Number 1"></div><div id="HEALTH" aria-label="Health"></div></div>
+<div id="HUD"><div id="NUMBER-CIRCLE"><img id="NUMBER-CIRCLE-BACKGROUND" src="../../Media/Images/0.png" alt=""><img id="NUMBER-IMAGE" src="../../Media/Images/1.png" alt="Number 1"></div><div id="HEALTH" aria-label="Health"></div></div>
 
 </main>
 
@@ -135,7 +135,7 @@ for(let x=0;x<WORLD_WIDTH;x+=64){
   for(let y=0;y<GROUND_H;y+=64){
     const tileHeight=Math.min(64,GROUND_H-y);
     const tile=document.createElement("img");
-    tile.src="../Media/Images/Floor.png";
+    tile.src="../../Media/Images/Floor.png";
     tile.alt="";
     tile.draggable=false;
     tile.style.cssText=`position:absolute;left:${x}px;bottom:${y}px;width:${tileWidth}px;height:${tileHeight}px;object-fit:fill;image-rendering:pixelated;display:block`;
@@ -150,7 +150,7 @@ for(let x=0;x<WORLD_WIDTH;x+=64){
 
    for(let x=p.x;x<p.x+p.w;x+=64){
 
-    const tile=document.createElement("img");tile.className="platform";tile.src="../Media/Images/Platform.png";tile.alt="";tile.draggable=false;
+    const tile=document.createElement("img");tile.className="platform";tile.src="../../Media/Images/Platform.png";tile.alt="";tile.draggable=false;
 
     tile.style.cssText=`left:${x}px;bottom:${GROUND_H+p.y-64}px;width:64px;height:64px;object-fit:cover;image-rendering:pixelated`;
 
@@ -160,13 +160,13 @@ for(let x=0;x<WORLD_WIDTH;x+=64){
 
   });
 
-  spikes.forEach(s=>{const e=document.createElement("img");e.className="spike";e.src="../Media/Images/Spikes.png";e.alt="Spikes";e.draggable=false;e.style.cssText=`left:${s.x}px;bottom:${GROUND_H+s.y}px;width:${s.w}px;height:42px`;e.onerror=()=>{e.style.display="none"};SCENERY.appendChild(e)});
+  spikes.forEach(s=>{const e=document.createElement("img");e.className="spike";e.src="../../Media/Images/Spikes.png";e.alt="Spikes";e.draggable=false;e.style.cssText=`left:${s.x}px;bottom:${GROUND_H+s.y}px;width:${s.w}px;height:42px`;e.onerror=()=>{e.style.display="none"};SCENERY.appendChild(e)});
 
   const end=document.createElement("div");end.id="EXIT";end.style.cssText=`position:absolute;left:${WORLD_WIDTH-100}px;bottom:${GROUND_H}px;width:8px;height:210px;visibility:hidden`;SCENERY.appendChild(end);
 
 }
 
-function drawHearts(){healthEl.innerHTML="";for(let i=0;i<getStartingHealth();i++){const h=document.createElement("img");h.className="HEART";h.src="../Media/Images/Heart.png";h.alt=i<hearts?"Heart":"Empty heart";h.style.opacity=i<hearts?"1":".2";healthEl.appendChild(h)}}
+function drawHearts(){healthEl.innerHTML="";for(let i=0;i<getStartingHealth();i++){const h=document.createElement("img");h.className="HEART";h.src="../../Media/Images/Heart.png";h.alt=i<hearts?"Heart":"Empty heart";h.style.opacity=i<hearts?"1":".2";healthEl.appendChild(h)}}
 
 function PLAYER_PATH(frameName){if(currentNumber===-1){const xFrame=frameName==="Charge"?"Charge":frameName==="Walk"?"Walk":"Still";return playerSpritePath(-1, xFrame)}return playerSpritePath(currentNumber, frameName)}
 
@@ -209,7 +209,7 @@ function UPDATE_ANIMATION(dt){
   animationFrame%=frames.length;SET_FRAME(frames[animationFrame])
 }
 
-function SET_NUMBER(n){if(!unlockedNumbers.includes(n))return;currentNumber=n;numberImage.src=`../Media/Images/${n}.png`;numberImage.alt=`Number ${n}`;numberImage.hidden=false;const iconScale={"-1":0.28,"1":0.2933,"2":0.32,"3":0.26,"4":0.26,"5":0.30};const iconOffset=n===1||n===2?20:0;numberImage.style.transform=`translate(${iconOffset}px,3px) scale(${iconScale[n]})`;projectile=null;PROJECTILE.hidden=true;dashTime=0;actionLocked=false;attacking=false;const animation=!onGround?(velocityY>0?"JUMP":"FALL"):(keys.left||keys.right?"WALK":"STILL");SET_ANIMATION(animation,true,true)}
+function SET_NUMBER(n){if(!unlockedNumbers.includes(n))return;currentNumber=n;numberImage.src=`../../Media/Images/${n}.png`;numberImage.alt=`Number ${n}`;numberImage.hidden=false;const iconScale={"-1":0.28,"1":0.2933,"2":0.32,"3":0.26,"4":0.26,"5":0.30};const iconOffset=n===1||n===2?20:0;numberImage.style.transform=`translate(${iconOffset}px,3px) scale(${iconScale[n]})`;projectile=null;PROJECTILE.hidden=true;dashTime=0;actionLocked=false;attacking=false;const animation=!onGround?(velocityY>0?"JUMP":"FALL"):(keys.left||keys.right?"WALK":"STILL");SET_ANIMATION(animation,true,true)}
 
 function LOAD_UNLOCKED_NUMBERS(){const out=[1];try{const saved=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");for(const [number,status] of Object.entries(saved.characters||{})){if(status==="UNLOCKED")out.push(Number(number))}if(localStorage.getItem("chapter1Completed")==="true")out.push(2)}catch(e){console.warn("Saved character progress could not be read from browser storage.",e)}return getSelectedPlayableNumbers(out)}
 
@@ -258,10 +258,10 @@ function START_ATTACK(){
       projectile=null;PROJECTILE.hidden=true;SET_ANIMATION("FALL",true,true);return
     }
     projectile={kind:"number-five",x:playerX+facing*48,y:playerY,verticalOffset:-20,direction:facing,elapsed:0,phase:"outbound",pauseTime:0,rotation:0};
-    PROJECTILE.src="../Media/Player/5/Standard/5_Alt.png";PROJECTILE.hidden=false
+    PROJECTILE.src="../../Media/Player/5/Standard/5_Alt.png";PROJECTILE.hidden=false
   }else if(currentNumber===3){
     projectile={kind:"arrow",x:playerX,y:playerY,verticalOffset:(177*PLAYER_SCALE-PROJECTILE.naturalHeight*1.2)/2,direction:facing,elapsed:0};
-    PROJECTILE.src="../Media/Player/3/Standard/3_Arrow.png";PROJECTILE.hidden=false
+    PROJECTILE.src="../../Media/Player/3/Standard/3_Arrow.png";PROJECTILE.hidden=false
   }
   attacking=true;actionLocked=true;SET_ANIMATION("SWING",true,true)
 }

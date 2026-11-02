@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SIXTYSEVEN — NUMBERS 6 AND 7</title>
   <style>
-    @font-face{font-family:Heading;src:url("../Media/Fonts/Heading.ttf") format("truetype")}
+    @font-face{font-family:Heading;src:url("../../Media/Fonts/Heading.ttf") format("truetype")}
     *{box-sizing:border-box}
     html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#090909;color:#eee;font-family:Heading,sans-serif}
     body{display:grid;place-items:center}
     #GAME{position:relative;width:min(1280px,100vw);height:min(720px,100vh);overflow:hidden;border:2px solid #000;background:#181818;isolation:isolate}
     #ARENA{position:absolute;inset:0;overflow:hidden;background:#100e12 url("Media/Chapter7_Background.png") left top / auto 100% repeat-x}
-    #GROUND{position:absolute;left:0;right:0;bottom:0;height:78px;border-top:3px solid #57465d;background:#100e12 url("../Media/Images/Floor.png") repeat;background-size:64px 64px}
+    #GROUND{position:absolute;left:0;right:0;bottom:0;height:78px;border-top:3px solid #57465d;background:#100e12 url("../../Media/Images/Floor.png") repeat;background-size:64px 64px}
     .fighter{position:absolute;bottom:78px;width:auto;height:auto;image-rendering:pixelated;user-select:none;pointer-events:none;transform-origin:center bottom}
     #PLAYER{z-index:4}
     .boss{z-index:3}
@@ -32,14 +32,14 @@
   <main id="GAME" aria-label="Chapter 7 boss arena">
     <section id="ARENA">
       <div id="GROUND"></div>
-      <img id="PLAYER" class="fighter" src="../Media/Player/1/Standard/1_Still.png" alt="Player">
-      <img id="BOSS-6" class="fighter boss" src="../Media/Enemy/6/6_Still.png" alt="Number 6">
-      <img id="BOSS-7" class="fighter boss" src="../Media/Enemy/7/7_Still.png" alt="Number 7">
+      <img id="PLAYER" class="fighter" src="../../Media/Player/1/Standard/1_Still.png" alt="Player">
+      <img id="BOSS-6" class="fighter boss" src="../../Media/Enemy/6/6_Still.png" alt="Number 6">
+      <img id="BOSS-7" class="fighter boss" src="../../Media/Enemy/7/7_Still.png" alt="Number 7">
       <img id="PLAYER-PROJECTILE" alt="" hidden>
-      <img id="SPELL" src="../Media/Enemy/6/6_Alt.png" alt="" hidden>
+      <img id="SPELL" src="../../Media/Enemy/6/6_Alt.png" alt="" hidden>
     </section>
     <div id="HUD">
-      <div id="NUMBER-CIRCLE"><img src="../Media/Images/0.png" alt=""><img id="NUMBER-IMAGE" src="../Media/Images/1.png" alt="Number 1"></div>
+      <div id="NUMBER-CIRCLE"><img src="../../Media/Images/0.png" alt=""><img id="NUMBER-IMAGE" src="../../Media/Images/1.png" alt="Number 1"></div>
       <div id="HEALTH" aria-label="Player health"></div>
     </div>
     <div id="MESSAGE" aria-live="assertive"></div>
@@ -106,7 +106,7 @@
       setPlayerFrame(playerFrames(name)[0]);
     }
     function setBossFrame(element,number,frame){
-      const src=`../Media/Enemy/${number}/${number}_${frame}.png`;
+      const src=`../../Media/Enemy/${number}/${number}_${frame}.png`;
       if(!element.src.endsWith(src))element.src=src;
     }
     function setBoss7Animation(name){
@@ -119,7 +119,7 @@
     function setNumber(number){
       if(!unlockedNumbers.includes(number))return;
       currentNumber=number;
-      numberImage.src=`../Media/Images/${number}.png`;numberImage.alt=`Number ${number}`;
+      numberImage.src=`../../Media/Images/${number}.png`;numberImage.alt=`Number ${number}`;
       const scales={"-1":.28,"1":.2933,"2":.32,"3":.26,"4":.26,"5":.30};
       numberImage.style.transform=`translate(${number===1||number===2?20:0}px,3px) scale(${scales[number]})`;
       setPlayerAnimation(!playerGrounded?(playerVelocityY>0?"JUMP":"FALL"):(keys.left||keys.right?"WALK":"STILL"),true);
@@ -127,7 +127,7 @@
     function drawHealth(){
       healthElement.replaceChildren();
       for(let i=0;i<3;i++){
-        const heart=document.createElement("img");heart.className="HEART";heart.src="../Media/Images/Heart.png";
+        const heart=document.createElement("img");heart.className="HEART";heart.src="../../Media/Images/Heart.png";
         heart.alt=i<playerHealth?"Heart":"Empty heart";heart.style.opacity=i<playerHealth?"1":".2";healthElement.appendChild(heart);
       }
     }
@@ -178,13 +178,13 @@
       }
       if(currentNumber===3){
         playerProjectile={kind:"arrow",x:playerX+playerFacing*45,y:playerY+48,direction:playerFacing,elapsed:0};
-        projectileElement.src="../Media/Player/3/Standard/3_Arrow.png";projectileElement.hidden=false;
+        projectileElement.src="../../Media/Player/3/Standard/3_Arrow.png";projectileElement.hidden=false;
       }else if(currentNumber===5){
         playerProjectile={
           kind:"blade",x:playerX+playerFacing*42,y:playerY+50,direction:playerFacing,elapsed:0,
           phase:"outbound",phaseTime:0,outboundHits:new Set(),returnHits:new Set(),rotation:0
         };
-        projectileElement.src="../Media/Player/5/Standard/5_Alt.png";projectileElement.hidden=false;
+        projectileElement.src="../../Media/Player/5/Standard/5_Alt.png";projectileElement.hidden=false;
       }
     }
     function updateProjectile(dt){

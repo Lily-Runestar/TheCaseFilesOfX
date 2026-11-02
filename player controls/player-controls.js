@@ -1,4 +1,5 @@
 const PLAYER_BINDINGS_STORAGE_KEY = "sixtySevenKeyBindings";
+const PLAYER_CONTROLS_SCRIPT_URL = new URL(document.currentScript.src, window.location.href);
 
 const DEFAULT_PLAYER_BINDINGS = Object.freeze({
   left: "a",
@@ -76,7 +77,7 @@ function getStartingHealth() {
 function playerSpritePath(number, frameName) {
   const settings = loadPlayerSettings();
   const skin = settings.skins[String(number)] || "Standard";
-  return `../Media/Player/${number}/${skin}/${number}_${frameName}.png`;
+  return new URL(`../Media/Player/${number}/${skin}/${number}_${frameName}.png`, PLAYER_CONTROLS_SCRIPT_URL).href;
 }
 
 const PLAYER_PROFILE = Object.freeze({

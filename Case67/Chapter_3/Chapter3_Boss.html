@@ -7,7 +7,7 @@
   <style>
     @font-face {
       font-family: Heading;
-      src: url("../Media/Fonts/Heading.ttf") format("truetype");
+      src: url("../../Media/Fonts/Heading.ttf") format("truetype");
     }
 
     * {
@@ -62,7 +62,7 @@
       inset: auto 0 0;
       height: 78px;
       border-top: 3px solid #57465d;
-      background: #100e12 url("../Media/Images/Floor.png") repeat;
+      background: #100e12 url("../../Media/Images/Floor.png") repeat;
       background-size: 64px 64px;
     }
 
@@ -162,16 +162,16 @@
   <main id="GAME" aria-label="Fight Number -1">
     <div id="ARENA">
       <div id="GROUND"></div>
-      <img id="PLAYER" src="../Media/Player/1/Standard/1_Still.png" alt="Player">
-      <img id="ENEMY" src="../Media/Enemy/-1/-1_Still.png" alt="Number -1">
+      <img id="PLAYER" src="../../Media/Player/1/Standard/1_Still.png" alt="Player">
+      <img id="ENEMY" src="../../Media/Enemy/-1/-1_Still.png" alt="Number -1">
       <img id="PLAYER-PROJECTILE" alt="" hidden>
     </div>
 
     <div id="MESSAGE" aria-live="polite"></div>
     <div id="HUD">
       <div id="NUMBER-CIRCLE">
-        <img id="NUMBER-CIRCLE-BACKGROUND" src="../Media/Images/0.png" alt="">
-        <img id="NUMBER-IMAGE" src="../Media/Images/1.png" alt="Number 1">
+        <img id="NUMBER-CIRCLE-BACKGROUND" src="../../Media/Images/0.png" alt="">
+        <img id="NUMBER-IMAGE" src="../../Media/Images/1.png" alt="Number 1">
       </div>
       <div id="HEALTH" aria-label="Health"></div>
     </div>
@@ -348,7 +348,7 @@
       projectileElement.hidden = true;
       playerAttackTime = 0;
       playerDashTime = 0;
-      numberImage.src = `../Media/Images/${number}.png`;
+      numberImage.src = `../../Media/Images/${number}.png`;
       numberImage.alt = `Number ${number}`;
       numberImage.hidden = false;
       const iconScale = { "-1": 0.28, "1": 0.2933, "2": 0.32, "3": 0.26, "4": 0.26, "5": 0.30 };
@@ -371,7 +371,7 @@
     }
 
     function setEnemyFrame(frame) {
-      const src = `../Media/Enemy/-1/-1_${frame}.png`;
+      const src = `../../Media/Enemy/-1/-1_${frame}.png`;
       enemyElement.style.width = "";
       enemyElement.style.height = "";
       enemyVisualOffsetX = 0;
@@ -479,7 +479,7 @@
           direction: playerFacing,
           elapsed: 0
         };
-        projectileElement.src = "../Media/Player/3/Standard/3_Arrow.png";
+        projectileElement.src = "../../Media/Player/3/Standard/3_Arrow.png";
         projectileElement.hidden = false;
       } else if (currentNumber === 5) {
         playerProjectile = {
@@ -494,7 +494,7 @@
           returnHit: false,
           rotation: 0
         };
-        projectileElement.src = "../Media/Player/5/Standard/5_Alt.png";
+        projectileElement.src = "../../Media/Player/5/Standard/5_Alt.png";
         projectileElement.hidden = false;
       } else if (currentNumber === -1) {
         playerDashTime = 0.24;
@@ -588,7 +588,7 @@
       for (let index = 0; index < PLAYER_MAX_HEALTH; index++) {
         const heart = document.createElement("img");
         heart.className = "HEART";
-        heart.src = "../Media/Images/Heart.png";
+        heart.src = "../../Media/Images/Heart.png";
         heart.alt = index < playerHealth ? "Heart" : "Empty heart";
         heart.style.opacity = index < playerHealth ? "1" : ".2";
         healthElement.appendChild(heart);
