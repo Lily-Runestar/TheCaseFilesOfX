@@ -89,12 +89,12 @@
 
     async function skinFolders(number) {
       const knownFolders = {
-        "-1": ["Standard", "Extra"],
+          "-1": ["Standard"],
         "1": ["Standard", "Christmas"],
-        "2": ["Standard", "Exrtra"],
-        "3": ["Standard", "Extra"],
-        "4": ["Standard", "Extra"],
-        "5": ["Standard", "Extra"]
+          "2": ["Standard"],
+          "3": ["Standard"],
+          "4": ["Standard"],
+          "5": ["Standard"]
       };
       try {
         const response = await fetch(`Media/Player/${number}/`);
@@ -104,7 +104,8 @@
         const folders = [...documentFromListing.querySelectorAll("a[href]")]
           .map((link) => decodeURIComponent(link.getAttribute("href").replace(/\/$/, "")))
           .filter((name) => name && name !== ".." && !name.includes("."));
-        return folders.length ? folders : knownFolders[String(number)] || ["Standard"];
+        const validFolders = folders.filter((folder) => (PLAYER_SKINS[String(number)] || ["Standard"]).includes(folder));
+        return validFolders.length ? validFolders : knownFolders[String(number)] || ["Standard"];
       } catch (error) {
         return knownFolders[String(number)] || ["Standard"];
       }

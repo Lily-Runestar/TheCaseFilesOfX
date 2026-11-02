@@ -32,6 +32,14 @@ const PLAYER_BINDING_LABELS = Object.freeze({
 });
 
 const PLAYER_SETTINGS_KEY = "sixtySevenPlayerSettings";
+const PLAYER_SKINS = Object.freeze({
+  "-1": Object.freeze(["Standard"]),
+  "1": Object.freeze(["Standard", "Christmas"]),
+  "2": Object.freeze(["Standard"]),
+  "3": Object.freeze(["Standard"]),
+  "4": Object.freeze(["Standard"]),
+  "5": Object.freeze(["Standard"])
+});
 const DEFAULT_PLAYER_SETTINGS = Object.freeze({
   cycle: [-1, 1, 2, 3, 4],
   skins: { "-1": "Standard", "1": "Standard", "2": "Standard", "3": "Standard", "4": "Standard", "5": "Standard" },
@@ -43,9 +51,14 @@ function loadPlayerSettings() {
   try {
     const saved = JSON.parse(localStorage.getItem(PLAYER_SETTINGS_KEY) || "{}");
     const cycle = Array.isArray(saved.cycle) ? saved.cycle.filter((n) => [-1, 1, 2, 3, 4, 5].includes(n)) : [];
+    const savedSkins = saved.skins && typeof saved.skins === "object" ? saved.skins : {};
+    const skins = { ...DEFAULT_PLAYER_SETTINGS.skins };
+    for (const number of Object.keys(PLAYER_SKINS)) {
+      if (PLAYER_SKINS[number].includes(savedSkins[number])) skins[number] = savedSkins[number];
+    }
     return {
       cycle: cycle.length ? [...cycle] : [...DEFAULT_PLAYER_SETTINGS.cycle],
-      skins: { ...DEFAULT_PLAYER_SETTINGS.skins, ...(saved.skins && typeof saved.skins === "object" ? saved.skins : {}) },
+      skins,
       difficulty: ["easy", "medium", "hard"].includes(saved.difficulty) ? saved.difficulty : "easy",
       hell: saved.hell === true
     };
@@ -76,7 +89,9 @@ function getStartingHealth() {
 
 function playerSpritePath(number, frameName) {
   const settings = loadPlayerSettings();
-  const skin = settings.skins[String(number)] || "Standard";
+  const availableSkins = PLAYER_SKINS[String(number)] || PLAYER_SKINS["1"];
+  const selectedSkin = settings.skins[String(number)];
+  const skin = availableSkins.includes(selectedSkin) ? selectedSkin : "Standard";
   return new URL(`../Media/Player/${number}/${skin}/${number}_${frameName}.png`, PLAYER_CONTROLS_SCRIPT_URL).href;
 }
 
