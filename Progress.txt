@@ -1,0 +1,25 @@
+Chapter 1 : Complete
+
+Chapter 2 : Complete
+
+Chapter 3 : Complete
+
+Chapter 4 : Complete
+
+Chapter 5 : Complete
+
+Chapter 6 : Complete
+
+Chapter 7 : Complete
+
+Chapter Background
+ - TODO
+1, 2, 3, 4, 5, 6, 7
+ - Complete
+N/A
+
+Character Animation
+ - TODO
+N/A
+ - Complete
+-1, 0, 1, 2, 3, 4, 5, 6, 7
