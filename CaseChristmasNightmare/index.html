@@ -36,6 +36,8 @@
     let unlockedNumbers=[1],number=1,playerX=120,playerY=0,playerVelocityY=0,playerGrounded=true,playerYVelocity=0,playerAttacking=false,attackCooldown=0,damageCooldown=0;
     let bossX=game.clientWidth-140,bossHealth=100,playerHealth=getStartingHealth(),facing=1,last=performance.now(),phase="DELAY",phaseTimer=1.5,activeTell="",finished=false;
     const tells=["BLUE","RED","YELLOW","PURPLE"];
+    for(const file of ["Blue.png","Red.png","Yellow.png","Purple.png","Still.png","Travel.png","Present.png","Sled.png","Meteor.png","Boom.png"]){const image=new Image();image.src=asset+file}
+    for(const character of [-1,1,2,3,4,5,16])for(const frame of ["Still","Walk","WalkF1","WalkF2","WalkAlt","StillAlt","Jump","Fall","SwingF1","SwingF2","Swing","Release","Sweep","Charge"]){const image=new Image();image.src=playerSpritePath(character===16?1:character,frame)}
     function loadCharacters(){const unlocked=[1];try{const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");for(const [character,status] of Object.entries(progress.characters||{}))if(status=== "UNLOCKED")unlocked.push(Number(character))}catch(error){console.warn("Saved characters could not be read.",error)}unlockedNumbers=getSelectedPlayableNumbers(unlocked);if(!unlockedNumbers.includes(number))number=unlockedNumbers[0]||1}
     function setNumber(character){if(!unlockedNumbers.includes(character))return;number=character;draw()}
     function drawHealth(){health.replaceChildren();for(let i=0;i<getStartingHealth();i++){const heart=document.createElement("img");heart.className="heart";heart.src="../Media/Images/Heart.png";heart.alt=i<playerHealth?"Heart":"Empty heart";heart.style.opacity=i<playerHealth?"1":".2";health.appendChild(heart)}}
@@ -63,7 +65,7 @@
           const present=createAttackImage("Present.png");present.x=bossX+(index===0?-35:35);present.elapsed=0;present.targetX=Math.max(120,Math.min(game.clientWidth-120,playerX+(index===0?-180:180)));present.startY=330;present.startX=present.x;present.style.left=`${present.x}px`;present.style.bottom=`${present.startY}px`;present.style.transform="translateX(-50%) scale(.1)";
         }
       }else if(activeTell==="RED"){
-        meteor.style.display="block";meteor.style.left=`${playerX}px`;meteor.style.bottom="520px";meteor.style.transform="translateX(-50%)";
+        meteor.style.display="block";meteor.style.left=`${playerX}px`;meteor.style.bottom="520px";meteor.style.transform="translateX(-50%) scale(.75)";
       }else if(activeTell==="PURPLE"){
         bossX=bossX<game.clientWidth/2?game.clientWidth-140:140;
       }
@@ -80,7 +82,7 @@
         else if(phase=== "ATTACK"&&phaseTimer<=0)endAttack();
         if(phase=== "ATTACK"){
           if(activeTell==="YELLOW"){
-            const sled=attackObjects[0];sled.x=(sled.x||bossX)+sled.direction*620*dt;sled.style.left=`${sled.x}px`;
+            const sled=attackObjects[0];sled.x=(sled.x||bossX)+sled.direction*320*dt;sled.style.left=`${sled.x}px`;
             if(Math.abs(sled.x-playerX)<120)hurtPlayer();
           }else if(activeTell==="BLUE"){
             for(const present of attackObjects){present.elapsed+=dt;const progress=Math.min(1,present.elapsed/1.5);const x=present.startX+(present.targetX-present.startX)*progress;const height=78+(present.startY-78)*Math.sin(progress*Math.PI)+(present.startY-78)*(1-progress);present.style.left=`${x}px`;present.style.bottom=`${height}px`;
