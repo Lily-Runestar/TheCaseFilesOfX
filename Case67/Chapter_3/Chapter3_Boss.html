@@ -448,8 +448,18 @@
       }
     }
 
+    function flashEnemy() {
+      let flashes = 0;
+      const pulse = () => {
+        if (flashes >= 6) { enemyElement.style.opacity = "1"; return; }
+        enemyElement.style.opacity = flashes++ % 2 ? "1" : "0.25";
+        window.setTimeout(pulse, 90);
+      };
+      pulse();
+    }
     function damageEnemy(amount) {
       enemyHealth = Math.max(0, enemyHealth - amount);
+      flashEnemy();
       if (enemyHealth <= 0) finishFight(true);
     }
 

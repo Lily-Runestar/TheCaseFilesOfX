@@ -142,8 +142,18 @@
       if(playerHealth<=0){finishFight(false);return}
       if(!ignoreIFrames)playerInvulnerable=.9;
     }
+    function flashBoss(element){
+      let flashes=0;
+      const pulse=()=>{
+        if(flashes>=6){element.style.opacity="1";return}
+        element.style.opacity=flashes++%2?"1":"0.25";
+        window.setTimeout(pulse,90);
+      };
+      pulse();
+    }
     function damageBoss(number,amount){
       if(introTimer<BOSS_INTRO_DURATION)return;
+      flashBoss(number===6?boss6Element:boss7Element);
       if(number===6){
         boss6Health=Math.max(0,boss6Health-amount);
         if(boss6Health===0){boss6Element.hidden=true;spell=null;spellElement.hidden=true}
