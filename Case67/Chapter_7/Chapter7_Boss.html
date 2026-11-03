@@ -74,8 +74,7 @@
     let spellTimer=6,spellChannelTimer=0,spell=null,introTimer=0,spellReleaseTimer=0;
     let spinCooldown=2.5,spinTimer=0,spinHitTimer=0,spinDirection=-1;
     let finished=false,lastTime=performance.now();
-    const carriedHealth=Number(new URLSearchParams(window.location.search).get("hp"));
-    if(Number.isInteger(carriedHealth)&&carriedHealth>0)playerHealth=Math.min(carriedHealth,3);
+
 
     function loadKeyBindings(){return loadPlayerBindings()}
     const keyBindings=loadKeyBindings();
@@ -126,7 +125,8 @@
     }
     function drawHealth(){
       healthElement.replaceChildren();
-      for(let i=0;i<3;i++){
+      const maximumHealth=getStartingHealth();
+      for(let i=0;i<maximumHealth;i++){
         const heart=document.createElement("img");heart.className="HEART";heart.src="../../Media/Images/Heart.png";
         heart.alt=i<playerHealth?"Heart":"Empty heart";heart.style.opacity=i<playerHealth?"1":".2";healthElement.appendChild(heart);
       }
@@ -311,7 +311,7 @@
         if(boss7Animation==="SPIN"){
           if(boss7Frame<3){boss7Frame++;setBossFrame(boss7Element,7,`AttackF${boss7Frame}`)}
         }else if(boss7Animation==="WALK"){
-          setBossFrame(boss7Element,7,`WalkF${boss7Frame+1}`);boss7Frame=(boss7Frame+1)%2;
+          setBossFrame(boss7Element,7,"WalkF1");boss7Frame=(boss7Frame+1)%2;
         }else setBossFrame(boss7Element,7,"Still");
       }
     }
