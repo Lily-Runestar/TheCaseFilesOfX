@@ -60,7 +60,7 @@
     const AVAILABLE_NUMBERS=[-1,1,2,3,4,5];
     const PLAYER_SPEED=300,JUMP_POWER=798.4,NUMBER_4_JUMP_POWER=1050,GRAVITY=1900;
     const FLOOR_Y=0,FLOOR_HEIGHT=78,PLAYER_WIDTH=44,PLAYER_HEIGHT=78,PLAYER_SCALE=.56,BOSS_SCALE=.62;
-    const PLAYER_DAMAGE={"-1":2,"1":3,"2":1,"3":2,"4":2,"5":3};
+
     const ANIMATION_DELAY=140;
     let unlockedNumbers=[1],currentNumber=1;
     let playerX=GAME.clientWidth*.15,playerY=0,playerVelocityY=0,playerGrounded=true;
@@ -90,13 +90,7 @@
       setNumber(unlockedNumbers.includes(currentNumber)?currentNumber:1);
     }
 
-    function playerFrames(name){
-      if(currentNumber===-1)return name==="WALK"?["Walk"]:name==="SWING"?["Charge"]:["Still"];
-      if(currentNumber===3)return name==="WALK"?["Walk"]:name==="SWING"?["Swing","Release"]:({STILL:["Still"],JUMP:["Jump"],FALL:["Fall"]})[name]||["Still"];
-      if(currentNumber===4)return name==="WALK"?["WalkF1","WalkF2"]:name==="SWING"?(playerAttackKind==="jump"?["Jump"]:["Sweep","Sweep","Sweep","Sweep"]):({STILL:["Still"],JUMP:["Jump"],FALL:["Sweep","Sweep"]})[name]||["Still"];
-      if(currentNumber===5)return name==="WALK"?["Walk","Still"]:name==="SWING"?["StillAlt","StillAlt"]:[name==="STILL"?"Still":"Still"];
-      return ({STILL:["Still"],WALK:["Still","WalkF1","WalkF2","WalkF1","WalkF2"],JUMP:["Jump"],FALL:["Fall"],SWING:["Still","SwingF1","SwingF2"]})[name]||["Still"];
-    }
+    function playerFrames(name){return getPlayerFrames(currentNumber,name=== "SWING"?"SWING":name=== "WALK"?"WALK":name,playerAttackKind)}
     function setPlayerFrame(frame){playerElement.src=playerSpritePath(currentNumber, frame)}
     function setPlayerAnimation(name,reset=false){
       if(playerAnimation===name&&!reset)return;
@@ -340,7 +334,7 @@
       if(playerDashTimer>0){
         playerDashTimer=Math.max(0,playerDashTimer-dt);playerX+=playerDashDirection*900*dt;
         if(!playerDashHit){
-          for(const [number,x] of [[6,boss6X],[7,boss7X]])if(Math.abs(x-playerX)<60){playerDashHit=true;damageBoss(number,PLAYER_DAMAGE[-1])}
+          for(const [number,x] of [[6,boss6X],[7,boss7X]])if(Math.abs(x-playerX)<60){playerDashHit=true;damageBoss(number,getPlayerDamage(-1,"dash"))}
         }
       }else if(movement&&playerAttackTimer<=0){
         playerX+=movement*PLAYER_SPEED*dt;playerFacing=movement;
@@ -350,7 +344,7 @@
         if(!playerAttackHit&&playerAttackTimer<=.18){
           playerAttackHit=true;
           if(currentNumber!==3&&currentNumber!==5&&currentNumber!==-1){
-            for(const [number,x] of [[6,boss6X],[7,boss7X]])if(meleeHitsBoss(x,0,playerFacing))damageBoss(number,PLAYER_DAMAGE[currentNumber]);
+            for(const [number,x] of [[6,boss6X],[7,boss7X]])if(meleeHitsBoss(x,0,playerFacing))damageBoss(number,getPlayerDamage(currentNumber));
           }
         }
       }

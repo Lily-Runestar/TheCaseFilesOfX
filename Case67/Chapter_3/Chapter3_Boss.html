@@ -217,14 +217,6 @@
     const ENEMY_CHARGE_WINDUP = 1;
     const ENEMY_CHARGE_DURATION = 0.42;
     const NUMBER_1_SWING_HOLD = 350;
-    const PLAYER_ATTACK_DAMAGE = {
-      "-1": { dash: 2 },
-      "1": { space: 3 },
-      "2": { space: 1 },
-      "3": { arrow: 2 },
-      "4": { jump: 1, space: 2 },
-      "5": { outbound: 1, returning: 3 }
-    };
     const PLAYER_MAX_HEALTH = 5;
     const ENEMY_MAX_HEALTH = 25;
     const carriedHealth = Number(new URLSearchParams(window.location.search).get("hp"));
@@ -534,7 +526,7 @@
           Math.abs(projectile.x - enemyX) < 38 &&
           Math.abs(projectile.y - (enemyY + 52)) < 76
         ) {
-          damageEnemy(PLAYER_ATTACK_DAMAGE["3"].arrow);
+          damageEnemy(getPlayerDamage(3,"arrow"));
           playerProjectile = null;
           projectileElement.hidden = true;
           return;
@@ -552,7 +544,7 @@
           Math.abs(projectile.y - (enemyY + 52)) < 82
         ) {
           projectile.outboundHit = true;
-          damageEnemy(PLAYER_ATTACK_DAMAGE["5"].outbound);
+          damageEnemy(getPlayerDamage(5,"outbound"));
         }
         if (projectile.phaseTime >= 3) {
           projectile.phase = "paused";
@@ -572,7 +564,7 @@
           Math.abs(projectile.y - (enemyY + 52)) < 82
         ) {
           projectile.returnHit = true;
-          damageEnemy(PLAYER_ATTACK_DAMAGE["5"].returning);
+          damageEnemy(getPlayerDamage(5,"returning"));
         }
         if (Math.abs(distanceToPlayer) < 30) {
           playerProjectile = null;
@@ -654,9 +646,9 @@
           Math.abs(enemyY - playerY) < 92
         ) {
           playerDashHit = true;
-          damageEnemy(PLAYER_ATTACK_DAMAGE["-1"].dash);
+          damageEnemy(getPlayerDamage(-1,"dash"));
         }
-      } else if (move !== 0 && playerAttackTime === 0) {
+      } else if (move !== 0 && canPlayerMove({finished,attackTime:playerAttackTime,dashTime:playerDashTime,recallingBlade:playerProjectile?.kind=== "blade"})) {
         playerX = Math.max(PLAYER_WIDTH / 2, Math.min(STAGE_WIDTH - PLAYER_WIDTH / 2, playerX + move * PLAYER_SPEED * dt));
         playerFacing = move;
       }
@@ -666,10 +658,7 @@
         const attackHitTime = playerAttackKind === "jump" ? 0.1 : 0.18;
         if (!playerAttackHit && playerAttackTime >= attackHitTime) {
           playerAttackHit = true;
-          const damageByAction = PLAYER_ATTACK_DAMAGE[currentNumber];
-          const meleeDamage = damageByAction
-            ? damageByAction[playerAttackKind === "jump" ? "jump" : "space"]
-            : 0;
+          const meleeDamage = getPlayerDamage(currentNumber, playerAttackKind === "jump" ? "jump" : "space");
           if (
             meleeDamage &&
             playerAttackHits() &&

@@ -96,14 +96,137 @@ function playerSpritePath(number, frameName) {
 }
 
 const PLAYER_PROFILE = Object.freeze({
-  width: 44,
-  height: 78,
-  scale: 0.56,
-  speed: 320,
-  jumpPower: 798.4,
-  number4JumpPower: 1050,
-  gravity: 1900
+  width: 44, height: 78, scale: 0.56, speed: 300,
+  jumpPower: 798.4, number4JumpPower: 1050, gravity: 1900,
+  floorHeight: 78, animationDelay: 140
 });
+
+const PLAYER_MOVEMENT_LOCKS = Object.freeze({
+  attack: 0.36,
+  dash: 0.24,
+  bladeRecall: 3,
+  number1SwingHold: 0.35,
+  number1HitHold: 0.7,
+  number4JumpLock: 0.36
+});
+
+function getPlayerMovementLock(state = {}) {
+  return {
+    finished: state.finished === true,
+    attacking: Number(state.attackTime || 0) > 0,
+    dashing: Number(state.dashTime || 0) > 0,
+    recallingBlade: state.recallingBlade === true,
+    hitHeld: Number(state.number1Hold || 0) > 0
+  };
+}
+
+function canPlayerMove(state = {}) {
+  return !Object.values(getPlayerMovementLock(state)).some(Boolean);
+}
+
+const PLAYER_ATTACK_DAMAGE = Object.freeze({
+  "-1": Object.freeze({ dash: 2 }),
+  "1": Object.freeze({ space: 3, melee: 3, hold: 0.7 }),
+  "2": Object.freeze({ space: 1, melee: 1 }),
+  "3": Object.freeze({ space: 2, arrow: 2 }),
+  "4": Object.freeze({ jump: 1, space: 2, melee: 2 }),
+  "5": Object.freeze({ space: 3, melee: 3, outbound: 1, returning: 3, blade: 3 })
+});
+
+const PLAYER_ANIMATION_FRAMES = Object.freeze({
+  "-1": Object.freeze({ STILL: ["Still"], WALK: ["Walk"], ATTACK: ["Charge"] }),
+  "1": Object.freeze({ STILL: ["Still"], WALK: ["Still", "WalkF1", "WalkF2", "WalkF1", "WalkF2"], JUMP: ["Jump"], FALL: ["Fall"], ATTACK: ["Still", "SwingF1", "SwingF2"] }),
+  "2": Object.freeze({ STILL: ["Still"], WALK: ["Still", "WalkF1", "WalkF2", "WalkF1", "WalkF2"], JUMP: ["Jump"], FALL: ["Fall"], ATTACK: ["Still", "SwingF1", "SwingF2"] }),
+  "3": Object.freeze({ STILL: ["Still"], WALK: ["Walk"], JUMP: ["Jump"], FALL: ["Fall"], ATTACK: ["Swing", "Release"] }),
+  "4": Object.freeze({ STILL: ["Still"], WALK: ["WalkF1", "WalkF2"], JUMP: ["Jump"], FALL: ["Sweep", "Sweep"], ATTACK: ["Sweep", "Sweep", "Sweep", "Sweep"] }),
+  "5": Object.freeze({ STILL: ["Still"], WALK: ["Walk", "Still", "WalkAlt", "StillAlt"], JUMP: ["Still", "StillAlt"], FALL: ["Still", "StillAlt"], ATTACK: ["StillAlt", "StillAlt"] })
+});
+
+const PLAYER_CHARACTER_BEHAVIOR = Object.freeze({
+  "-1": Object.freeze({ attackLocked: true, dashSpeed: 900, dashDuration: 0.24, invulnerable: 0.5 }),
+  "1": Object.freeze({ attackLocked: true, swingHold: 0.35, hitHold: 0.7 }),
+  "2": Object.freeze({ attackLocked: true }),
+  "3": Object.freeze({ attackLocked: true, projectileSpeed: 620, projectileLifetime: 1.3 }),
+  "4": Object.freeze({ attackLocked: true, mirrorInAir: true, mirrorOnAttack: true, jumpPower: 1050, fallFrameRate: 70 }),
+  "5": Object.freeze({ attackLocked: true, projectileSpeed: 300, recallSpeed: 480, recallDelay: 0.45, travelOnRecall: true })
+});
+
+function getPlayerBehavior(number) {
+  return PLAYER_CHARACTER_BEHAVIOR[String(number)] || PLAYER_CHARACTER_BEHAVIOR["1"];
+}
+
+function createPlayerProjectile(number, x, y, direction) {
+  if (Number(number) === 3) return { kind: "arrow", x: x + direction * 45, y: y + 48, direction, elapsed: 0 };
+  if (Number(number) === 5) return { kind: "blade", x: x + direction * 42, y: y + 50, direction, elapsed: 0, phase: "outbound", phaseTime: 0, rotation: 0, outboundHit: false, returnHit: false };
+  return null;
+}
+
+function updatePlayerProjectileState(projectile, dt, playerX, width) {
+  if (!projectile) return { projectile: null, hit: null };
+  projectile.elapsed += dt;
+  projectile.phaseTime += dt;
+  if (projectile.kind === "arrow") {
+    projectile.x += projectile.direction * getPlayerBehavior(3).projectileSpeed * dt;
+    if (projectile.elapsed >= getPlayerBehavior(3).projectileLifetime || projectile.x < 0 || projectile.x > width) return { projectile: null, hit: null, expired: true };
+    return { projectile, hit: projectile.phase === "hit" ? "arrow" : null };
+  }
+  if (projectile.phase === "outbound") {
+    projectile.x += projectile.direction * getPlayerBehavior(5).projectileSpeed * dt;
+    if (projectile.phaseTime >= 3) { projectile.phase = "paused"; projectile.phaseTime = 0; }
+  } else if (projectile.phase === "paused") {
+    if (projectile.phaseTime >= getPlayerBehavior(5).recallDelay) { projectile.phase = "returning"; projectile.phaseTime = 0; }
+  } else {
+    projectile.x += Math.sign(playerX - projectile.x) * getPlayerBehavior(5).recallSpeed * dt;
+    projectile.rotation += 540 * dt;
+    if (Math.abs(playerX - projectile.x) < 30) return { projectile: null, hit: null, recalled: true };
+  }
+  return { projectile, hit: null };
+}
+
+function getPlayerHorizontalFlip(number, facing, grounded, attacking, now) {
+  const behavior = getPlayerBehavior(number);
+  if (Number(number) === 4 && behavior.mirrorOnAttack && (!grounded || attacking)) return Math.floor(now / 70) % 2 === 0 ? -1 : 1;
+  return 1;
+}
+
+function getPlayerRecallPosition(number, projectile, playerState) {
+  if (Number(number) !== 5 || !projectile) return null;
+  return { x: projectile.x, y: projectile.y, grounded: false, projectile: null };
+}
+
+function getPlayerActionDuration(number, action = "attack") {
+  if (action === "swing" && Number(number) === 1) return PLAYER_MOVEMENT_LOCKS.number1SwingHold;
+  if (action === "swing") return PLAYER_MOVEMENT_LOCKS.attack;
+  if (action === "dash") return PLAYER_MOVEMENT_LOCKS.dash;
+  if (action === "bladeRecall") return PLAYER_MOVEMENT_LOCKS.bladeRecall;
+  if (Number(number) === 1 && action === "hit") return PLAYER_MOVEMENT_LOCKS.number1HitHold;
+  if (Number(number) === 4 && action === "jumpAttack") return PLAYER_MOVEMENT_LOCKS.number4JumpLock;
+  return PLAYER_MOVEMENT_LOCKS.attack;
+}
+
+function getPlayerDamage(number, action = "space") {
+  const damage = PLAYER_ATTACK_DAMAGE[String(number)] || {};
+  return damage[action] ?? damage.space ?? damage.melee ?? 1;
+}
+
+function getPlayerFrames(number, state, attackKind = "space") {
+  const frames = PLAYER_ANIMATION_FRAMES[String(number)] || PLAYER_ANIMATION_FRAMES["1"];
+  if (state === "WALK") return frames.WALK;
+  if (state === "SWING" || state === "ATTACK") {
+    if (Number(number) === 3) return ["Swing", "Release"];
+    if (Number(number) === 4) return attackKind === "jump" ? ["Jump"] : ["Sweep", "Sweep", "Sweep", "Sweep"];
+    if (Number(number) === -1) return ["Charge"];
+    return frames.ATTACK;
+  }
+  if (Number(number) === 5 && state === "STILL") return ["Still"];
+  return frames[state] || ["Still"];
+}
+
+function getPlayerAnimationFrame(number, state, attacking, alternate = 0) {
+  const normalizedState = attacking ? "SWING" : state;
+  const frames = getPlayerFrames(number, normalizedState);
+  return frames[alternate % frames.length] || "Still";
+}
 
 function loadPlayerBindings() {
   try {
