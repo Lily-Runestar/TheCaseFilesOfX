@@ -14,7 +14,7 @@
     #hud{position:absolute;z-index:10;top:18px;left:18px;right:18px;display:flex;justify-content:space-between;font:24px Arial,sans-serif;text-shadow:2px 2px #000}
     #health{display:flex;gap:5px}.heart{width:30px;height:30px;object-fit:contain}
     #meteor{position:absolute;display:none;width:auto;height:auto;image-rendering:pixelated;z-index:5}
-    .attack-image{position:absolute;width:auto;height:auto;image-rendering:pixelated;pointer-events:none;z-index:5}
+    .attack-image{position:absolute;width:auto;height:auto;image-rendering:pixelated;pointer-events:none;z-index:5;transform-origin:center bottom}
     #message{position:absolute;z-index:12;inset:45% 0 auto;text-align:center;font:26px Arial,sans-serif;text-shadow:2px 2px #000}
   </style>
 </head>
@@ -40,13 +40,14 @@
     function setNumber(character){if(!unlockedNumbers.includes(character))return;number=character;draw()}
     function drawHealth(){health.replaceChildren();for(let i=0;i<getStartingHealth();i++){const heart=document.createElement("img");heart.className="heart";heart.src="../Media/Images/Heart.png";heart.alt=i<playerHealth?"Heart":"Empty heart";heart.style.opacity=i<playerHealth?"1":".2";health.appendChild(heart)}}
     function playerFrame(){
+      const alternate=Math.floor(performance.now()/140)%2;
       if(number===-1)return playerAttacking?"Charge":keys.left||keys.right?"Walk":"Still";
-      if(number===3)return playerAttacking?"Swing":!playerGrounded?(playerVelocityY>0?"Jump":"Fall"):keys.left||keys.right?"Walk":"Still";
-      if(number===4)return playerAttacking?"Sweep":!playerGrounded?(playerVelocityY>0?"Jump":"Sweep"):keys.left||keys.right?"WalkF1":"Still";
-      if(number===5)return !playerGrounded?"Still":playerAttacking?"StillAlt":keys.left||keys.right?"Walk":"Still";
-      return playerAttacking?(number===1||number===2?"SwingF1":"Still") : (!playerGrounded?(playerVelocityY>0?"Jump":"Fall"):keys.left||keys.right?"WalkF1":"Still");
+      if(number===3)return playerAttacking?(alternate?"Release":"Swing"):!playerGrounded?(playerVelocityY>0?"Jump":"Fall"):keys.left||keys.right?"Walk":"Still";
+      if(number===4)return playerAttacking?"Sweep":!playerGrounded?(playerVelocityY>0?"Jump":"Sweep"):keys.left||keys.right?(alternate?"WalkF2":"WalkF1"):"Still";
+      if(number===5)return !playerGrounded?"Still":playerAttacking?"StillAlt":keys.left||keys.right?(alternate?"WalkAlt":"Walk"):(alternate?"StillAlt":"Still");
+      return playerAttacking?(alternate?"SwingF2":"SwingF1") : (!playerGrounded?(playerVelocityY>0?"Jump":"Fall"):keys.left||keys.right?(alternate?"WalkF2":"WalkF1"):"Still");
     }
-    function draw(){player.src=playerSpritePath(number,playerFrame());player.style.left=`${playerX}px`;player.style.bottom=`${78+playerY}px`;player.style.transform=`translateX(-50%) scale(.56) scaleX(${-facing})`;boss.style.left=`${bossX}px`;boss.style.transform="translateX(-50%)"}
+    function draw(){player.src=playerSpritePath(number===16?1:number,playerFrame());player.style.left=`${playerX}px`;player.style.bottom=`${78+playerY}px`;player.style.transform=`translateX(-50%) scale(.56) scaleX(${-facing})`;boss.style.left=`${bossX}px`;boss.style.transform=`translateX(-50%) scaleX(${bossX>game.clientWidth/2?-1:1})`}
     function hurtPlayer(){if(finished||damageCooldown>0)return;damageCooldown=.7;playerHealth--;drawHealth();if(playerHealth<=0){finished=true;message.textContent="DEFEATED"}}
     function unlockCharacter16(){try{const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");progress.characters=progress.characters||{};progress.characters["16"]="UNLOCKED";localStorage.setItem("sixtySevenProgress",JSON.stringify(progress))}catch(error){console.error("Could not unlock Character 16",error)}}
     function victory(){finished=true;unlockCharacter16();message.textContent="VICTORY — 16 UNLOCKED"}
