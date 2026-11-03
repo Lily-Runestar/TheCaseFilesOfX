@@ -39,8 +39,14 @@
     function loadCharacters(){const unlocked=[1];try{const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");for(const [character,status] of Object.entries(progress.characters||{}))if(status=== "UNLOCKED")unlocked.push(Number(character))}catch(error){console.warn("Saved characters could not be read.",error)}unlockedNumbers=getSelectedPlayableNumbers(unlocked);if(!unlockedNumbers.includes(number))number=unlockedNumbers[0]||1}
     function setNumber(character){if(!unlockedNumbers.includes(character))return;number=character;draw()}
     function drawHealth(){health.replaceChildren();for(let i=0;i<getStartingHealth();i++){const heart=document.createElement("img");heart.className="heart";heart.src="../Media/Images/Heart.png";heart.alt=i<playerHealth?"Heart":"Empty heart";heart.style.opacity=i<playerHealth?"1":".2";health.appendChild(heart)}}
-    function playerFrame(){if(number===-1)return keys.left||keys.right?"Walk":"Still";if(number===3)return !playerGrounded?(playerVelocityY>0?"Jump":"Fall"):keys.left||keys.right?"Walk":"Still";if(number===4)return !playerGrounded?(playerVelocityY>0?"Jump":"Sweep"):playerAttacking?"Sweep":keys.left||keys.right?"WalkF1":"Still";if(number===5)return keys.left||keys.right?(playerVelocityY!==0?"Still":"Walk"):(playerAttacking?"StillAlt":"Still");return !playerGrounded?(playerVelocityY>0?"Jump":"Fall"):playerAttacking?(number===1?"SwingF1":"SwingF1"):keys.left||keys.right?"WalkF1":"Still"}
-    function draw(){player.src=playerSpritePath(number,playerFrame());player.style.left=`${playerX}px`;player.style.bottom=`${78+playerY}px`;player.style.transform=`translateX(-50%) scale(.56) scaleX(${-facing})`;boss.style.left=`${bossX}px`;boss.style.transform=`translateX(-50%) scaleX(${bossX<playerX?-1:1})`}
+    function playerFrame(){
+      if(number===-1)return playerAttacking?"Charge":keys.left||keys.right?"Walk":"Still";
+      if(number===3)return playerAttacking?"Swing":!playerGrounded?(playerVelocityY>0?"Jump":"Fall"):keys.left||keys.right?"Walk":"Still";
+      if(number===4)return playerAttacking?"Sweep":!playerGrounded?(playerVelocityY>0?"Jump":"Sweep"):keys.left||keys.right?"WalkF1":"Still";
+      if(number===5)return !playerGrounded?"Still":playerAttacking?"StillAlt":keys.left||keys.right?"Walk":"Still";
+      return playerAttacking?(number===1||number===2?"SwingF1":"Still") : (!playerGrounded?(playerVelocityY>0?"Jump":"Fall"):keys.left||keys.right?"WalkF1":"Still");
+    }
+    function draw(){player.src=playerSpritePath(number,playerFrame());player.style.left=`${playerX}px`;player.style.bottom=`${78+playerY}px`;player.style.transform=`translateX(-50%) scale(.56) scaleX(${-facing})`;boss.style.left=`${bossX}px`;boss.style.transform="translateX(-50%)"}
     function hurtPlayer(){if(finished||damageCooldown>0)return;damageCooldown=.7;playerHealth--;drawHealth();if(playerHealth<=0){finished=true;message.textContent="DEFEATED"}}
     function unlockCharacter16(){try{const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");progress.characters=progress.characters||{};progress.characters["16"]="UNLOCKED";localStorage.setItem("sixtySevenProgress",JSON.stringify(progress))}catch(error){console.error("Could not unlock Character 16",error)}}
     function victory(){finished=true;unlockCharacter16();message.textContent="VICTORY — 16 UNLOCKED"}
@@ -50,7 +56,7 @@
     function beginAttack(){
       clearAttackObjects();boss.src=asset+({BLUE:"Still.png",RED:"Red.png",YELLOW:"Yellow.png",PURPLE:"Travel.png"}[activeTell]);
       if(activeTell==="YELLOW"){
-        const sled=createAttackImage("Sled.png");sled.style.left=`${bossX}px`;sled.style.bottom="78px";sled.style.transform=`translateX(-50%) scale(.5)`;
+        const sled=createAttackImage("Sled.png");sled.x=bossX;sled.direction=playerX<bossX?-1:1;sled.style.left=`${bossX}px`;sled.style.bottom="78px";sled.style.transform=`translateX(-50%) scale(.5) scaleX(${sled.direction===1?-1:1})`;
       }else if(activeTell==="BLUE"){
         for(let index=0;index<2;index++){
           const present=createAttackImage("Present.png");present.x=bossX+(index===0?-35:35);present.elapsed=0;present.targetX=Math.max(120,Math.min(game.clientWidth-120,playerX+(index===0?-180:180)));present.startY=330;present.startX=present.x;present.style.left=`${present.x}px`;present.style.bottom=`${present.startY}px`;present.style.transform="translateX(-50%) scale(.1)";
@@ -73,11 +79,11 @@
         else if(phase=== "ATTACK"&&phaseTimer<=0)endAttack();
         if(phase=== "ATTACK"){
           if(activeTell==="YELLOW"){
-            const sled=attackObjects[0];const direction=bossX<=playerX?1:-1;sled.x=(sled.x||bossX)+direction*620*dt;sled.style.left=`${sled.x}px`;
-            if(Math.abs(sled.x-playerX)<120&&parseFloat(sled.style.bottom)<130)hurtPlayer();
+            const sled=attackObjects[0];sled.x=(sled.x||bossX)+sled.direction*620*dt;sled.style.left=`${sled.x}px`;
+            if(Math.abs(sled.x-playerX)<120)hurtPlayer();
           }else if(activeTell==="BLUE"){
             for(const present of attackObjects){present.elapsed+=dt;const progress=Math.min(1,present.elapsed/1.5);const x=present.startX+(present.targetX-present.startX)*progress;const height=78+(present.startY-78)*Math.sin(progress*Math.PI)+(present.startY-78)*(1-progress);present.style.left=`${x}px`;present.style.bottom=`${height}px`;
-              if(progress>=1){present.src=asset+"Boom.png";present.style.transform="translateX(-50%) scale(.45)";if(Math.abs(x-playerX)<90)hurtPlayer();}
+              if(progress>=1){present.src=asset+"Boom.png";present.style.bottom="78px";present.style.transform="translateX(-50%) scale(.45)";if(Math.abs(x-playerX)<90)hurtPlayer();}
             }
           }else if(activeTell==="RED"){
             meteor.style.bottom=`${Math.max(78,parseFloat(meteor.style.bottom)-520*dt)}px`;
