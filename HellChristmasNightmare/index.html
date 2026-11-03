@@ -21,24 +21,26 @@
     <img id="player" alt="Player">
     <img id="boss" src="../Media/Enemy/NicholasRenegade/DEMON.png" alt="Demonic Nicholas Renegade">
     <img id="meteor" src="../Media/Enemy/NicholasRenegade/Meteor.png" alt="Meteor" hidden>
-    <div id="hud"><div id="health"></div><div id="boss-health">BOSS 200 / 200</div></div>
+    <div id="hud"><div id="health"></div></div>
     <div id="message" aria-live="polite"></div>
   </main>
   <script src="../player controls/player-controls.js"></script>
   <script>
-    const game=document.getElementById("game"),player=document.getElementById("player"),boss=document.getElementById("boss"),meteor=document.getElementById("meteor"),health=document.getElementById("health"),bossHealthElement=document.getElementById("boss-health"),message=document.getElementById("message");
+    const game=document.getElementById("game"),player=document.getElementById("player"),boss=document.getElementById("boss"),meteor=document.getElementById("meteor"),health=document.getElementById("health"),message=document.getElementById("message");
     const asset="../Media/Enemy/NicholasRenegade/",keys={left:false,right:false},keyBindings=loadPlayerBindings();
-    let playerX=120,bossX=game.clientWidth-140,bossHealth=200,playerHealth=getStartingHealth(),facing=1,last=performance.now(),phase="DELAY",phaseTimer=1.5,attack="",finished=false;
+    let unlockedNumbers=[1],number=1,playerX=120,bossX=game.clientWidth-140,bossHealth=200,playerHealth=getStartingHealth(),facing=1,last=performance.now(),phase="DELAY",phaseTimer=1.5,attack="",finished=false;
+    function loadCharacters(){const unlocked=[1];try{const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");for(const [character,status] of Object.entries(progress.characters||{}))if(status=== "UNLOCKED")unlocked.push(Number(character))}catch(error){console.warn("Saved characters could not be read.",error)}unlockedNumbers=getSelectedPlayableNumbers(unlocked);if(!unlockedNumbers.includes(number))number=unlockedNumbers[0]||1}
+    function setNumber(character){if(!unlockedNumbers.includes(character))return;number=character;draw()}
     function drawHealth(){health.replaceChildren();for(let i=0;i<getStartingHealth();i++){const heart=document.createElement("img");heart.className="heart";heart.src="../Media/Images/Heart.png";heart.alt=i<playerHealth?"Heart":"Empty heart";heart.style.opacity=i<playerHealth?"1":".2";health.appendChild(heart)}}
-    function draw(){player.src=playerSpritePath(1,keys.left||keys.right?"WalkF1":"Still");player.style.left=`${playerX}px`;player.style.transform=`translateX(-50%) scale(.56) scaleX(${facing})`;boss.style.left=`${bossX}px`;boss.style.transform=`translateX(-50%) scaleX(${bossX<playerX?-1:1})`;bossHealthElement.textContent=`BOSS ${bossHealth} / 200`}
+    function draw(){player.src=playerSpritePath(number,keys.left||keys.right?"WalkF1":"Still");player.style.left=`${playerX}px`;player.style.transform=`translateX(-50%) scale(.56) scaleX(${-facing})`;boss.style.left=`${bossX}px`;boss.style.transform=`translateX(-50%) scaleX(${bossX<playerX?-1:1})`}
     function damagePlayer(){if(finished)return;playerHealth--;drawHealth();if(playerHealth<=0){finished=true;message.textContent="DEFEATED"}}
     function unlockCharacter16(){try{const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");progress.characters=progress.characters||{};progress.characters["16"]="UNLOCKED";localStorage.setItem("sixtySevenProgress",JSON.stringify(progress))}catch(error){console.error("Could not unlock Character 16",error)}}
     function victory(){finished=true;unlockCharacter16();message.textContent="VICTORY — 16 UNLOCKED"}
     function beginAttack(){boss.src=asset+(attack==="PRESENT"?"Present.png":"DEMON.png");meteor.hidden=attack!=="METEOR";if(attack==="METEOR"){meteor.style.left=`${playerX}px`;meteor.style.bottom="520px"}}
     function loop(now){const dt=Math.min((now-last)/1000,.04);last=now;if(!finished){const movement=(keys.right?1:0)-(keys.left?1:0);playerX+=movement*300*dt;if(movement)facing=movement;playerX=Math.max(22,Math.min(game.clientWidth-22,playerX));phaseTimer-=dt;if(phase=== "DELAY"&&phaseTimer<=0){phase="STILL";phaseTimer=5}else if(phase=== "STILL"&&phaseTimer<=0){attack=Math.random()<.5?"PRESENT":"METEOR";boss.src=asset+"DEMON.png";phase="READY";phaseTimer=3}else if(phase=== "READY"&&phaseTimer<=0){phase="ATTACK";phaseTimer=2;beginAttack()}else if(phase=== "ATTACK"&&phaseTimer<=0){meteor.hidden=true;attack="";boss.src=asset+"DEMON.png";phase="STILL";phaseTimer=5}if(phase=== "ATTACK"&&attack==="METEOR"){meteor.style.bottom=`${Math.max(78,parseFloat(meteor.style.bottom)-260*dt)}px`;if(parseFloat(meteor.style.bottom)<=78){meteor.hidden=true;if(Math.abs(parseFloat(meteor.style.left)-playerX)<70)damagePlayer()}}draw();requestAnimationFrame(loop)}}
-    addEventListener("keydown",e=>{const key=e.key.toLowerCase();if(key===keyBindings.left||key==="arrowleft")keys.left=true;if(key===keyBindings.right||key==="arrowright")keys.right=true;if(key===keyBindings.attack&&!e.repeat&&Math.abs(playerX-bossX)<110){bossHealth=Math.max(0,bossHealth-1);if(bossHealth===0)victory();draw()}});
+    addEventListener("keydown",e=>{const key=e.key.toLowerCase();if(key===keyBindings.left||key=== "arrowleft")keys.left=true;if(key===keyBindings.right||key=== "arrowright")keys.right=true;if(key===keyBindings.previous&&!e.repeat){const index=unlockedNumbers.indexOf(number);setNumber(unlockedNumbers[(index-1+unlockedNumbers.length)%unlockedNumbers.length])}if(key===keyBindings.next&&!e.repeat){const index=unlockedNumbers.indexOf(number);setNumber(unlockedNumbers[(index+1)%unlockedNumbers.length])}if(key===keyBindings.attack&&!e.repeat&&Math.abs(playerX-bossX)<110){bossHealth=Math.max(0,bossHealth-1);if(bossHealth===0)victory();draw()}});
     addEventListener("keyup",e=>{const key=e.key.toLowerCase();if(key===keyBindings.left||key==="arrowleft")keys.left=false;if(key===keyBindings.right||key==="arrowright")keys.right=false});
-    drawHealth();bossX=game.clientWidth-140;draw();requestAnimationFrame(loop);
+    loadCharacters();drawHealth();bossX=game.clientWidth-140;draw();requestAnimationFrame(loop);
   </script>
 </body>
 </html>

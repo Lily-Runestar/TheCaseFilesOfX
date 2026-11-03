@@ -13,8 +13,8 @@
     #boss{position:absolute;bottom:78px;width:auto;height:auto;max-height:none;image-rendering:pixelated;user-select:none;pointer-events:none;transform-origin:center bottom;z-index:3}
     #hud{position:absolute;z-index:10;top:18px;left:18px;right:18px;display:flex;justify-content:space-between;font:24px Arial,sans-serif;text-shadow:2px 2px #000}
     #health{display:flex;gap:5px}.heart{width:30px;height:30px;object-fit:contain}
-    #meteor,#hazard{position:absolute;display:none;width:54px;height:54px;image-rendering:pixelated}
-    #meteor{z-index:5} #hazard{z-index:2}
+    #meteor{position:absolute;display:none;width:auto;height:auto;image-rendering:pixelated;z-index:5}
+    .attack-image{position:absolute;width:auto;height:auto;image-rendering:pixelated;pointer-events:none;z-index:5}
     #message{position:absolute;z-index:12;inset:45% 0 auto;text-align:center;font:26px Arial,sans-serif;text-shadow:2px 2px #000}
   </style>
 </head>
@@ -24,28 +24,69 @@
     <img id="player" alt="Player">
     <img id="boss" src="../Media/Enemy/NicholasRenegade/Still.png" alt="Nicholas Renegade">
     <img id="meteor" src="../Media/Enemy/NicholasRenegade/Meteor.png" alt="Meteor">
-    <img id="hazard" alt="Attack">
-    <div id="hud"><div id="health"></div><div id="boss-health"></div></div>
+
+    <div id="hud"><div id="health"></div></div>
     <div id="message" aria-live="polite"></div>
   </main>
   <script src="../player controls/player-controls.js"></script>
   <script>
     const game=document.getElementById("game"),player=document.getElementById("player"),boss=document.getElementById("boss");
-    const meteor=document.getElementById("meteor"),hazard=document.getElementById("hazard"),health=document.getElementById("health"),bossHealthElement=document.getElementById("boss-health"),message=document.getElementById("message");
+    const meteor=document.getElementById("meteor"),health=document.getElementById("health"),message=document.getElementById("message");
     const keys={left:false,right:false},asset="../Media/Enemy/NicholasRenegade/",keyBindings=loadPlayerBindings();
-    let number=1,playerX=120,bossX=game.clientWidth-140,bossHealth=100,playerHealth=getStartingHealth(),facing=1,last=performance.now(),phase="DELAY",phaseTimer=1.5,activeTell="",finished=false;
+    let unlockedNumbers=[1],number=1,playerX=120,bossX=game.clientWidth-140,bossHealth=100,playerHealth=getStartingHealth(),facing=1,last=performance.now(),phase="DELAY",phaseTimer=1.5,activeTell="",finished=false;
     const tells=["BLUE","RED","YELLOW","PURPLE"];
+    function loadCharacters(){const unlocked=[1];try{const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");for(const [character,status] of Object.entries(progress.characters||{}))if(status=== "UNLOCKED")unlocked.push(Number(character))}catch(error){console.warn("Saved characters could not be read.",error)}unlockedNumbers=getSelectedPlayableNumbers(unlocked);if(!unlockedNumbers.includes(number))number=unlockedNumbers[0]||1}
+    function setNumber(character){if(!unlockedNumbers.includes(character))return;number=character;draw()}
     function drawHealth(){health.replaceChildren();for(let i=0;i<getStartingHealth();i++){const heart=document.createElement("img");heart.className="heart";heart.src="../Media/Images/Heart.png";heart.alt=i<playerHealth?"Heart":"Empty heart";heart.style.opacity=i<playerHealth?"1":".2";health.appendChild(heart)}}
-    function draw(){player.src=playerSpritePath(number,keys.left||keys.right?"WalkF1":"Still");player.style.left=`${playerX}px`;player.style.transform=`translateX(-50%) scale(.56) scaleX(${facing})`;boss.style.left=`${bossX}px`;boss.style.transform=`translateX(-50%) scaleX(${bossX<playerX?-1:1})`;bossHealthElement.textContent=`BOSS ${bossHealth} / 100`}
+    function draw(){player.src=playerSpritePath(number,keys.left||keys.right?"WalkF1":"Still");player.style.left=`${playerX}px`;player.style.transform=`translateX(-50%) scale(.56) scaleX(${-facing})`;boss.style.left=`${bossX}px`;boss.style.transform=`translateX(-50%) scaleX(${bossX<playerX?-1:1})`}
     function hurtPlayer(){if(finished)return;playerHealth--;drawHealth();if(playerHealth<=0){finished=true;message.textContent="DEFEATED"}}
     function unlockCharacter16(){try{const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");progress.characters=progress.characters||{};progress.characters["16"]="UNLOCKED";localStorage.setItem("sixtySevenProgress",JSON.stringify(progress))}catch(error){console.error("Could not unlock Character 16",error)}}
     function victory(){finished=true;unlockCharacter16();message.textContent="VICTORY — 16 UNLOCKED"}
-    function beginAttack(){boss.src=asset+({BLUE:"Present.png",RED:"Red.png",YELLOW:"Sled.png",PURPLE:"Travel.png"}[activeTell]);meteor.style.display="none";hazard.style.display="none";if(activeTell==="BLUE"||activeTell==="YELLOW"){hazard.src=asset+(activeTell==="BLUE"?"Present.png":"Sled.png");hazard.style.display="block";hazard.style.left=`${bossX}px`;hazard.style.bottom="78px";if(Math.abs(playerX-bossX)<140)hurtPlayer()}else if(activeTell=== "PURPLE"){bossX=playerX<game.clientWidth/2?game.clientWidth-140:140}else if(activeTell==="RED"){meteor.style.display="block";meteor.style.left=`${playerX}px`;meteor.style.bottom="520px"}}
-    function endAttack(){meteor.style.display="none";hazard.style.display="none";if(activeTell==="RED"&&Math.abs(parseFloat(meteor.style.left)-playerX)<70)hurtPlayer();activeTell="";boss.src=asset+"Still.png";phase="STILL";phaseTimer=5}
-    function loop(now){const dt=Math.min((now-last)/1000,.04);last=now;if(!finished){const movement=(keys.right?1:0)-(keys.left?1:0);playerX+=movement*300*dt;if(movement)facing=movement;playerX=Math.max(22,Math.min(game.clientWidth-22,playerX));phaseTimer-=dt;if(phase=== "DELAY"&&phaseTimer<=0){phase="STILL";phaseTimer=5}else if(phase=== "STILL"&&phaseTimer<=0){activeTell=tells[Math.floor(Math.random()*tells.length)];boss.src=asset+({BLUE:"Blue.png",RED:"Red.png",YELLOW:"Yellow.png",PURPLE:"Purple.png"}[activeTell]);phase="READY";phaseTimer=3}else if(phase=== "READY"&&phaseTimer<=0){beginAttack();phase="ATTACK";phaseTimer=2}else if(phase=== "ATTACK"&&phaseTimer<=0)endAttack();if(phase=== "ATTACK"&&activeTell==="RED"){meteor.style.bottom=`${Math.max(78,parseFloat(meteor.style.bottom)-260*dt)}px`;if(parseFloat(meteor.style.bottom)<=78){meteor.style.display="none";if(Math.abs(parseFloat(meteor.style.left)-playerX)<70)hurtPlayer()}}draw();requestAnimationFrame(loop)}}
-    addEventListener("keydown",e=>{const key=e.key.toLowerCase();if(key===keyBindings.left||key==="arrowleft")keys.left=true;if(key===keyBindings.right||key==="arrowright")keys.right=true;if(key===keyBindings.attack&&!e.repeat&&Math.abs(playerX-bossX)<110&&bossHealth>0){bossHealth=Math.max(0,bossHealth-1);if(bossHealth===0)victory();draw()}});
+    let attackObjects=[];
+    function clearAttackObjects(){for(const object of attackObjects)object.remove();attackObjects=[];meteor.style.display="none"}
+    function createAttackImage(file){const image=document.createElement("img");image.className="attack-image";image.src=asset+file;game.appendChild(image);attackObjects.push(image);return image}
+    function beginAttack(){
+      clearAttackObjects();boss.src=asset+({BLUE:"Still.png",RED:"Red.png",YELLOW:"Yellow.png",PURPLE:"Travel.png"}[activeTell]);
+      if(activeTell==="YELLOW"){
+        const sled=createAttackImage("Sled.png");sled.style.left=`${bossX}px`;sled.style.bottom="78px";sled.style.transform=`translateX(-50%) scale(.5)`;
+      }else if(activeTell==="BLUE"){
+        for(let index=0;index<2;index++){
+          const present=createAttackImage("Present.png");present.x=bossX+(index===0?-35:35);present.elapsed=0;present.targetX=Math.max(120,Math.min(game.clientWidth-120,playerX+(index===0?-180:180)));present.startY=330;present.startX=present.x;present.style.left=`${present.x}px`;present.style.bottom=`${present.startY}px`;
+        }
+      }else if(activeTell==="RED"){
+        meteor.style.display="block";meteor.style.left=`${playerX}px`;meteor.style.bottom="520px";meteor.style.transform="translateX(-50%)";
+      }else if(activeTell==="PURPLE"){
+        bossX=bossX<game.clientWidth/2?game.clientWidth-140:140;
+      }
+    }
+    function endAttack(){clearAttackObjects();activeTell="";boss.src=asset+"Still.png";phase="STILL";phaseTimer=5}
+    function loop(now){
+      const dt=Math.min((now-last)/1000,.04);last=now;
+      if(!finished){
+        const movement=(keys.right?1:0)-(keys.left?1:0);playerX+=movement*300*dt;if(movement)facing=movement;
+        playerX=Math.max(22,Math.min(game.clientWidth-22,playerX));phaseTimer-=dt;
+        if(phase=== "DELAY"&&phaseTimer<=0){phase="STILL";phaseTimer=5}
+        else if(phase=== "STILL"&&phaseTimer<=0){activeTell=tells[Math.floor(Math.random()*tells.length)];boss.src=asset+({BLUE:"Blue.png",RED:"Red.png",YELLOW:"Yellow.png",PURPLE:"Purple.png"}[activeTell]);phase="READY";phaseTimer=3}
+        else if(phase=== "READY"&&phaseTimer<=0){beginAttack();phase="ATTACK";phaseTimer=2}
+        else if(phase=== "ATTACK"&&phaseTimer<=0)endAttack();
+        if(phase=== "ATTACK"){
+          if(activeTell==="YELLOW"){
+            const sled=attackObjects[0];const direction=bossX<=playerX?1:-1;sled.x=(sled.x||bossX)+direction*620*dt;sled.style.left=`${sled.x}px`;
+            if(Math.abs(sled.x-playerX)<120&&parseFloat(sled.style.bottom)<130)hurtPlayer();
+          }else if(activeTell==="BLUE"){
+            for(const present of attackObjects){present.elapsed+=dt;const progress=Math.min(1,present.elapsed/1.5);const x=present.startX+(present.targetX-present.startX)*progress;const height=78+(present.startY-78)*Math.sin(progress*Math.PI)+(present.startY-78)*(1-progress);present.style.left=`${x}px`;present.style.bottom=`${height}px`;
+              if(progress>=1){present.src=asset+"Boom.png";present.style.transform="translateX(-50%) scale(.45)";if(Math.abs(x-playerX)<90)hurtPlayer();}
+            }
+          }else if(activeTell==="RED"){
+            meteor.style.bottom=`${Math.max(78,parseFloat(meteor.style.bottom)-520*dt)}px`;
+            if(parseFloat(meteor.style.bottom)<=78){meteor.style.display="none";if(Math.abs(parseFloat(meteor.style.left)-playerX)<110)hurtPlayer();}
+          }
+        }
+        draw();requestAnimationFrame(loop);
+      }}
+    addEventListener("keydown",e=>{const key=e.key.toLowerCase();if(key===keyBindings.left||key=== "arrowleft")keys.left=true;if(key===keyBindings.right||key=== "arrowright")keys.right=true;if(key===keyBindings.previous&&!e.repeat){const index=unlockedNumbers.indexOf(number);setNumber(unlockedNumbers[(index-1+unlockedNumbers.length)%unlockedNumbers.length])}if(key===keyBindings.next&&!e.repeat){const index=unlockedNumbers.indexOf(number);setNumber(unlockedNumbers[(index+1)%unlockedNumbers.length])}if(key===keyBindings.attack&&!e.repeat&&Math.abs(playerX-bossX)<110&&bossHealth>0){bossHealth=Math.max(0,bossHealth-1);if(bossHealth===0)victory();draw()}});
     addEventListener("keyup",e=>{const key=e.key.toLowerCase();if(key===keyBindings.left||key==="arrowleft")keys.left=false;if(key===keyBindings.right||key==="arrowright")keys.right=false});
-    drawHealth();bossX=game.clientWidth-140;draw();requestAnimationFrame(loop);
+    loadCharacters();drawHealth();bossX=game.clientWidth-140;draw();requestAnimationFrame(loop);
   </script>
 </body>
 </html>
