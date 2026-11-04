@@ -172,7 +172,7 @@ function PLAYER_PATH(frameName){if(currentNumber===-1){const xFrame=frameName===
 
 function SET_FRAME(frameName){const src=PLAYER_PATH(frameName);if(!PLAYER.src.endsWith(src))PLAYER.src=src}
 
-function PLAYER_ANIMATION_FRAMES(name){
+function getChapterPlayerAnimationFrames(name){
   if(currentNumber===-1){if(name==="WALK")return["Walk","Walk"];if(name==="DASH")return["Charge"];return["Still"]}
   if(currentNumber===3){if(name==="WALK")return["Walk"];if(name==="SWING")return["Swing","Release"];return({STILL:["Still"],JUMP:["Jump"],FALL:["Fall"]})[name]||ANIMATIONS[name]}
   if(currentNumber===4){if(name==="WALK")return["WalkF1","WalkF2"];if(name==="SWING")return["Sweep","Sweep","Sweep","Sweep"];if(name==="FALL")return["Sweep","Sweep"];return({STILL:["Still"],JUMP:["Jump"]})[name]||ANIMATIONS[name]}
@@ -180,10 +180,10 @@ function PLAYER_ANIMATION_FRAMES(name){
   return ANIMATIONS[name]||["Still"]
 }
 
-function SET_ANIMATION(name,reset=true,force=false){if((!ANIMATIONS[name]&&name!=="DASH")||(actionLocked&&!force))return;if(currentAnimation!==name||reset){currentAnimation=name;animationFrame=0;animationTimer=0;if(currentNumber===4&&(name==="FALL"||name==="SWING"))fallFlip=1;SET_FRAME(PLAYER_ANIMATION_FRAMES(name)[0])}}
+function SET_ANIMATION(name,reset=true,force=false){if((!ANIMATIONS[name]&&name!=="DASH")||(actionLocked&&!force))return;if(currentAnimation!==name||reset){currentAnimation=name;animationFrame=0;animationTimer=0;if(currentNumber===4&&(name==="FALL"||name==="SWING"))fallFlip=1;SET_FRAME(getChapterPlayerAnimationFrames(name)[0])}}
 
 function UPDATE_ANIMATION(dt){
-  const frames=PLAYER_ANIMATION_FRAMES(currentAnimation);
+  const frames=getChapterPlayerAnimationFrames(currentAnimation);
   if(!frames||frames.length===0){SET_FRAME("Still");return}
   if(frames.length===1){
     SET_FRAME(frames[0]);
