@@ -37,7 +37,7 @@ const PLAYER_SKINS = Object.freeze({
   "1": Object.freeze(["Standard", "Christmas"]),
   "2": Object.freeze(["Standard"]),
   "3": Object.freeze(["Standard"]),
-  "4": Object.freeze(["Standard"]),
+  "4": Object.freeze(["Standard", "Halloween"]),
   "5": Object.freeze(["Standard"])
 });
 const DEFAULT_PLAYER_SETTINGS = Object.freeze({
