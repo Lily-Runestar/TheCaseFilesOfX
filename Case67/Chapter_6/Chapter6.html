@@ -82,7 +82,7 @@ body{display:flex;align-items:center;justify-content:center}
 
 </main>
 
-<script src="../../player controls/player-controls.js"></script>
+<script src="../../player controls/player-controls.js?v=lny2024"></script>
 <script>
 
 const AVAILABLE_NUMBERS=[-1,1,2,3,4,5];
@@ -413,7 +413,7 @@ function START_ATTACK(){
     PROJECTILE.src="../../Media/Player/5/Standard/5_Alt.png";PROJECTILE.hidden=false
   }else if(currentNumber===3){
     projectile={kind:"arrow",x:playerX,y:playerY,verticalOffset:(177*PLAYER_SCALE-PROJECTILE.naturalHeight*1.2)/2,direction:facing,elapsed:0};
-    PROJECTILE.src="../../Media/Player/3/Standard/3_Arrow.png";PROJECTILE.hidden=false
+    PROJECTILE.src=playerSpritePath(3,"Arrow");PROJECTILE.hidden=false
   }
   attacking=true;actionLocked=true;SET_ANIMATION("SWING",true,true)
 }

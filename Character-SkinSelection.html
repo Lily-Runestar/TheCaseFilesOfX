@@ -28,7 +28,7 @@
     <div id="skins"></div>
     <div id="cycle" aria-label="Number cycle"></div>
   </main>
-  <script src="player controls/player-controls.js"></script>
+  <script src="player controls/player-controls.js?v=lny2024"></script>
   <script>
     const status = document.getElementById("status");
     const skinsElement = document.getElementById("skins");
@@ -96,20 +96,7 @@
           "4": ["Standard", "Halloween"],
           "5": ["Standard"]
       };
-      try {
-        const response = await fetch(`Media/Player/${number}/`);
-        if (!response.ok) return knownFolders[String(number)] || ["Standard"];
-        const html = await response.text();
-        const documentFromListing = new DOMParser().parseFromString(html, "text/html");
-        const folders = [...documentFromListing.querySelectorAll("a[href]")]
-          .map((link) => decodeURIComponent(link.getAttribute("href")))
-          .map((href) => href.replace(/\/$/, "").replace(/^\.\//, ""))
-          .filter((name) => name && name !== ".." && !name.includes("."));
-        const validFolders = folders.filter((folder) => (PLAYER_SKINS[String(number)] || ["Standard"]).includes(folder));
-        return validFolders.length ? validFolders : knownFolders[String(number)] || ["Standard"];
-      } catch (error) {
-        return knownFolders[String(number)] || ["Standard"];
-      }
+      return knownFolders[String(number)] || ["Standard"];
     }
 
     async function showSkins(number) {

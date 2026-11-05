@@ -177,7 +177,7 @@
     </div>
   </main>
 
-  <script src="../../player controls/player-controls.js"></script>
+  <script src="../../player controls/player-controls.js?v=lny2024"></script>
 
   <script>
     const GAME = document.getElementById("GAME");
@@ -481,7 +481,7 @@
           direction: playerFacing,
           elapsed: 0
         };
-        projectileElement.src = "../../Media/Player/3/Standard/3_Arrow.png";
+        projectileElement.src = playerSpritePath(3,"Arrow");
         projectileElement.hidden = false;
       } else if (currentNumber === 5) {
         playerProjectile = {
