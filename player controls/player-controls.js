@@ -247,3 +247,92 @@ function loadPlayerBindings() {
 function loadKeyBindings() {
   return loadPlayerBindings();
 }
+
+const PLAYER_GAMEPAD_BINDINGS = Object.freeze({
+  left: { axes: [0, -1], buttons: [14] },
+  right: { axes: [0, 1], buttons: [15] },
+  jump: { buttons: [0] },
+  attack: { buttons: [2, 7] },
+  previous: { buttons: [4] },
+  next: { buttons: [5] },
+  summon: { buttons: [3] }
+});
+
+const PLAYER_GAMEPAD_KEY_NAMES = Object.freeze({
+  left: "a",
+  right: "d",
+  jump: "w",
+  attack: " ",
+  previous: "q",
+  next: "e",
+  summon: "s"
+});
+
+const playerGamepadState = new Map();
+
+function playerGamepadAxisPressed(gamepad, action) {
+  const binding = PLAYER_GAMEPAD_BINDINGS[action];
+  if (!binding || !binding.axes) return false;
+  const [axis, direction] = binding.axes;
+  const value = gamepad.axes[axis] || 0;
+  return direction < 0 ? value < -0.35 : value > 0.35;
+}
+
+function playerGamepadButtonPressed(gamepad, action) {
+  return (PLAYER_GAMEPAD_BINDINGS[action].buttons || []).some((index) => {
+    const button = gamepad.buttons[index];
+    return button ? button.pressed || button.value > 0.5 : false;
+  });
+}
+
+function playerGamepadActionPressed(gamepad, action) {
+  return playerGamepadAxisPressed(gamepad, action) || playerGamepadButtonPressed(gamepad, action);
+}
+
+function dispatchPlayerGamepadKey(action, type) {
+  const key = PLAYER_GAMEPAD_KEY_NAMES[action];
+  document.dispatchEvent(new KeyboardEvent(type, {
+    key,
+    code: key === " " ? "Space" : "",
+    bubbles: true,
+    cancelable: true,
+    repeat: false
+  }));
+}
+
+function updatePlayerGamepad() {
+  if (!navigator.getGamepads) return;
+
+  const gamepads = navigator.getGamepads();
+  const connectedGamepad = Array.from(gamepads).find((gamepad) => gamepad);
+
+  document.querySelectorAll("[data-gamepad-status]").forEach((status) => {
+    status.textContent = connectedGamepad ? `Controller connected: ${connectedGamepad.id}` : "No controller connected.";
+  });
+
+  if (!connectedGamepad) {
+    playerGamepadState.forEach((held, action) => {
+      if (held) dispatchPlayerGamepadKey(action, "keyup");
+    });
+    playerGamepadState.clear();
+    return;
+  }
+
+  Object.keys(PLAYER_GAMEPAD_BINDINGS).forEach((action) => {
+    const held = playerGamepadActionPressed(connectedGamepad, action);
+    const wasHeld = playerGamepadState.get(action) === true;
+    if (held && !wasHeld) dispatchPlayerGamepadKey(action, "keydown");
+    if (!held && wasHeld) dispatchPlayerGamepadKey(action, "keyup");
+    playerGamepadState.set(action, held);
+  });
+
+  requestAnimationFrame(updatePlayerGamepad);
+}
+
+window.addEventListener("gamepadconnected", () => {
+  requestAnimationFrame(updatePlayerGamepad);
+});
+
+if (navigator.getGamepads) {
+  requestAnimationFrame(updatePlayerGamepad);
+}
