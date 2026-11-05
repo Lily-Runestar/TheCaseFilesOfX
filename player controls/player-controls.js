@@ -54,7 +54,8 @@ function loadPlayerSettings() {
     const savedSkins = saved.skins && typeof saved.skins === "object" ? saved.skins : {};
     const skins = { ...DEFAULT_PLAYER_SETTINGS.skins };
     for (const number of Object.keys(PLAYER_SKINS)) {
-      if (PLAYER_SKINS[number].includes(savedSkins[number])) skins[number] = savedSkins[number];
+      const savedSkin = savedSkins[number] ?? savedSkins[String(number)];
+      if (PLAYER_SKINS[number].includes(savedSkin)) skins[number] = savedSkin;
     }
     return {
       cycle: cycle.length ? [...cycle] : [...DEFAULT_PLAYER_SETTINGS.cycle],
