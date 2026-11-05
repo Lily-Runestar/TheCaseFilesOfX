@@ -939,6 +939,12 @@
         const index = unlockedNumbers.indexOf(currentNumber);
         setNumber(unlockedNumbers[(index + 1) % unlockedNumbers.length]);
       }
+      for (let slot = 1; slot <= 5; slot++) {
+        if (!event.repeat && key === keyBindings[`number${slot}`]) {
+          const cycle = loadPlayerSettings().cycle;
+          setNumber(cycle[slot - 1] ?? [1, 2, 3, 4, 5][slot - 1]);
+        }
+      }
     });
 
     document.addEventListener("keyup", (event) => {

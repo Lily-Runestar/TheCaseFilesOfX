@@ -6,22 +6,42 @@
   <title>Controls</title>
   <style>
     html,body{min-height:100%;margin:0;background:#111;color:#fff;font-family:Arial,sans-serif}
-    main{width:min(700px,calc(100% - 32px));margin:24px auto}
+    main{width:min(900px,calc(100% - 32px));margin:24px auto}
     h1{text-align:center}.row{display:grid;grid-template-columns:1fr 120px;align-items:center;border-bottom:1px solid #444;padding:8px}
     button,a.back{color:#fff;background:#292929;border:1px solid #777;padding:10px;cursor:pointer;text-decoration:none}
     .top{display:flex;justify-content:space-between;align-items:center}.capturing{background:#777;color:#111}
     p{min-height:24px;text-align:center;color:#ccc}
     .progress-reset{position:sticky;bottom:0;margin-top:24px;padding:16px;background:#111;text-align:center}
     #reset-progress{min-width:180px;padding:12px 18px;background:#aa3333;border-color:#ff7777;font-weight:bold}
+    .controls-columns{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+    .controls-column{border:1px solid #444;padding:16px}
+    .controls-column h2{margin-top:0;font-size:20px;text-align:center}
+    .column-header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .gamepad-setting{display:grid;grid-template-columns:minmax(120px,1fr) minmax(140px,1.2fr);gap:8px;align-items:center;margin-bottom:10px}
+    .gamepad-setting input{box-sizing:border-box;width:100%;padding:8px;background:#222;color:#fff;border:1px solid #777}
+    .gamepad-setting .gamepad-inputs{display:grid;grid-template-columns:1fr auto;gap:6px}
+    .gamepad-setting .gamepad-inputs button{padding:8px;white-space:nowrap}
+    .gamepad-setting .capturing{background:#777;color:#111}
+    #reset-gamepad{margin-top:4px}
+    @media(max-width:650px){.controls-columns{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <main>
-    <div class="top"><a class="back" href="index.html">BACK</a><h1>CONTROLS</h1><button id="reset">RESET</button></div>
+    <div class="top"><a class="back" href="index.html">BACK</a><h1>CONTROLS</h1></div>
     <p data-gamepad-status>No controller connected.</p>
-    <div class="row"><span>Controller</span><span>Left stick / D-pad: Move<br>A: Jump &nbsp; X: Attack &nbsp; Y: Summon<br>LB / RB: Previous / Next character</span></div>
-    <div id="bindings"></div>
-    <p id="status" aria-live="polite">Choose a control, then press any key.</p>
+    <div class="controls-columns">
+      <section class="controls-column">
+        <div class="column-header"><h2>Controller</h2><button id="reset-gamepad" type="button">RESET</button></div>
+        <p>Enter comma-separated controller button numbers.<br>D-pad standard: left 14, right 15, up 12, down 13.</p>
+        <div id="gamepad-bindings"></div>
+      </section>
+      <section class="controls-column">
+        <div class="column-header"><h2>PC</h2><button id="reset">RESET</button></div>
+        <div id="bindings"></div>
+        <p id="status" aria-live="polite">Choose a control, then press any key.</p>
+      </section>
+    </div>
     <div class="progress-reset">
       <button id="reset-progress" type="button">RESET PROGRESS</button>
     </div>
@@ -32,6 +52,142 @@
     const status = document.getElementById("status");
     let bindings = loadPlayerBindings();
     let capturing = null;
+
+    const GAMEPAD_SETTING_ACTIONS = ["left", "right", "jump", "attack", "previous", "next", "summon", "number1", "number2", "number3", "number4", "number5"];
+    const GAMEPAD_SETTING_LABELS = {
+      left: "Move Left",
+      right: "Move Right",
+      jump: "Jump",
+      attack: "Attack",
+      previous: "Previous Character",
+      next: "Next Character",
+      summon: "Summon",
+      number1: "Select Cycle Slot 1",
+      number2: "Select Cycle Slot 2",
+      number3: "Select Cycle Slot 3",
+      number4: "Select Cycle Slot 4",
+      number5: "Select Cycle Slot 5"
+    };
+
+    function parseButtonIndexes(value) {
+      return [...new Set(value.split(",").map((item) => Number(item.trim())).filter((number) => Number.isInteger(number) && number >= 0 && number <= 31))];
+    }
+
+    function parseAxis(value) {
+      if (/^none$/i.test(value.trim())) return null;
+      const match = value.trim().match(/^(\d+)\s*([+-])$/);
+      return match ? [Number(match[1]), match[2] === "-" ? -1 : 1] : null;
+    }
+
+    let capturingGamepad = null;
+
+    function startGamepadCapture(action, captureAxis, button) {
+      capturingGamepad = { action, captureAxis };
+      document.querySelectorAll(".gamepad-setting .capturing").forEach((item) => item.classList.remove("capturing"));
+      button.classList.add("capturing");
+      button.textContent = "...";
+      status.textContent = `Activate a controller control for ${GAMEPAD_SETTING_LABELS[action]}.`;
+    }
+
+    function makeGamepadCaptureButton(action, captureAxis) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = captureAxis ? "CAPTURE AXIS" : "CAPTURE";
+      button.addEventListener("click", () => startGamepadCapture(action, captureAxis, button));
+      return button;
+    }
+
+    function observeGamepadCapture() {
+      if (!capturingGamepad || !navigator.getGamepads) return;
+      const gamepad = Array.from(navigator.getGamepads()).find((item) => item);
+      if (!gamepad) return;
+
+      if (!capturingGamepad.captureAxis) {
+        const buttonIndex = gamepad.buttons.findIndex((item) => item.pressed || item.value > 0.5);
+        if (buttonIndex >= 0) {
+          const action = capturingGamepad.action;
+          const updated = loadPlayerGamepadBindings();
+          updated[action].buttons = [buttonIndex];
+          savePlayerGamepadBindings(updated);
+          capturingGamepad = null;
+          status.textContent = `${GAMEPAD_SETTING_LABELS[action]} controller button saved.`;
+          showGamepadBindings();
+        }
+        return;
+      }
+
+      const axisEntry = gamepad.axes.map((value, axis) => ({ axis, value }))
+        .find((entry) => Math.abs(entry.value) > 0.65);
+      if (axisEntry) {
+        const action = capturingGamepad.action;
+        const updated = loadPlayerGamepadBindings();
+        updated[action].axes = [axisEntry.axis, axisEntry.value < 0 ? -1 : 1];
+        savePlayerGamepadBindings(updated);
+        capturingGamepad = null;
+        status.textContent = `${GAMEPAD_SETTING_LABELS[action]} stick axis saved.`;
+        showGamepadBindings();
+      }
+    }
+
+    function showGamepadBindings() {
+      const container = document.getElementById("gamepad-bindings");
+      const gamepadBindings = loadPlayerGamepadBindings();
+      container.innerHTML = "";
+      GAMEPAD_SETTING_ACTIONS.forEach((action) => {
+        const binding = gamepadBindings[action];
+        const row = document.createElement("label");
+        row.className = "gamepad-setting";
+        row.innerHTML = `<span>${GAMEPAD_SETTING_LABELS[action]}</span>`;
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = (binding.buttons || []).join(", ");
+        input.setAttribute("aria-label", `${GAMEPAD_SETTING_LABELS[action]} controller buttons`);
+        input.addEventListener("change", () => {
+          const updated = loadPlayerGamepadBindings();
+          updated[action].buttons = parseButtonIndexes(input.value);
+          savePlayerGamepadBindings(updated);
+          input.value = updated[action].buttons.join(", ");
+          status.textContent = `${GAMEPAD_SETTING_LABELS[action]} controller settings saved.`;
+        });
+        const inputs = document.createElement("div");
+        inputs.className = "gamepad-inputs";
+        inputs.appendChild(input);
+        inputs.appendChild(makeGamepadCaptureButton(action, false));
+        row.appendChild(inputs);
+        container.appendChild(row);
+
+        {
+          const axisRow = document.createElement("label");
+          axisRow.className = "gamepad-setting";
+          axisRow.innerHTML = "<span>Stick axis</span>";
+          const axisInput = document.createElement("input");
+          axisInput.type = "text";
+          axisInput.value = binding.axes ? `${binding.axes[0]}${binding.axes[1] < 0 ? "-" : "+"}` : "NONE";
+          axisInput.setAttribute("aria-label", `${GAMEPAD_SETTING_LABELS[action]} stick axis and direction`);
+          axisInput.addEventListener("change", () => {
+            const axes = parseAxis(axisInput.value);
+            if (axisInput.value.trim().toUpperCase() !== "NONE" && !axes) {
+              axisInput.value = binding.axes ? `${binding.axes[0]}${binding.axes[1] < 0 ? "-" : "+"}` : "NONE";
+              status.textContent = "Stick axis must use a format such as 0- or 0+.";
+              return;
+            }
+            const updated = loadPlayerGamepadBindings();
+            updated[action].axes = axes;
+            savePlayerGamepadBindings(updated);
+            axisInput.value = axes ? `${axes[0]}${axes[1] < 0 ? "-" : "+"}` : "NONE";
+            status.textContent = `${GAMEPAD_SETTING_LABELS[action]} stick axis saved.`;
+          });
+          const axisInputs = document.createElement("div");
+          axisInputs.className = "gamepad-inputs";
+          axisInputs.appendChild(axisInput);
+          axisInputs.appendChild(makeGamepadCaptureButton(action, true));
+          axisRow.appendChild(axisInputs);
+          container.appendChild(axisRow);
+        }
+      });
+    }
+
+    setInterval(observeGamepadCapture, 100);
 
     function showBindings() {
       bindingsElement.innerHTML = "";
@@ -78,7 +234,14 @@
       savePlayerSettings(settings);
       status.textContent = "Case progress reset.";
     });
+    document.getElementById("reset-gamepad").addEventListener("click", () => {
+      localStorage.removeItem(PLAYER_GAMEPAD_BINDINGS_STORAGE_KEY);
+      savePlayerGamepadBindings(copyPlayerGamepadBindings(PLAYER_GAMEPAD_BINDINGS));
+      status.textContent = "Controller settings reset to defaults.";
+      showGamepadBindings();
+    });
     showBindings();
+    showGamepadBindings();
   </script>
 </body>
 </html>

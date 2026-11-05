@@ -255,8 +255,59 @@ const PLAYER_GAMEPAD_BINDINGS = Object.freeze({
   attack: { buttons: [2, 7] },
   previous: { buttons: [4] },
   next: { buttons: [5] },
-  summon: { buttons: [3] }
+  summon: { buttons: [3] },
+  number1: { buttons: [] },
+  number2: { buttons: [] },
+  number3: { buttons: [] },
+  number4: { buttons: [] },
+  number5: { buttons: [] }
 });
+
+const PLAYER_GAMEPAD_BINDINGS_STORAGE_KEY = "sixtySevenGamepadBindings";
+
+function copyPlayerGamepadBindings(bindings) {
+  return Object.fromEntries(Object.entries(bindings).map(([action, binding]) => [
+    action,
+    {
+      ...(Object.prototype.hasOwnProperty.call(binding, "axes") ? { axes: binding.axes ? [...binding.axes] : null } : {}),
+      buttons: [...(binding.buttons || [])]
+    }
+  ]));
+}
+
+function loadPlayerGamepadBindings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PLAYER_GAMEPAD_BINDINGS_STORAGE_KEY) || "{}");
+    const bindings = copyPlayerGamepadBindings(PLAYER_GAMEPAD_BINDINGS);
+    Object.keys(bindings).forEach((action) => {
+      if (!saved[action] || typeof saved[action] !== "object") return;
+      if (Array.isArray(saved[action].buttons)) {
+        bindings[action].buttons = saved[action].buttons
+          .map(Number)
+          .filter((button) => Number.isInteger(button) && button >= 0 && button <= 31);
+      }
+      if (Array.isArray(saved[action].axes) && saved[action].axes.length === 2) {
+        const [axis, direction] = saved[action].axes.map(Number);
+        if (Number.isInteger(axis) && axis >= 0 && axis <= 31 && [-1, 1].includes(direction)) {
+          bindings[action].axes = [axis, direction];
+        }
+      } else if (saved[action].axes === null) {
+        bindings[action].axes = null;
+      }
+    });
+    return bindings;
+  } catch (error) {
+    console.warn("Controller bindings could not be loaded; using defaults.", error);
+    return copyPlayerGamepadBindings(PLAYER_GAMEPAD_BINDINGS);
+  }
+}
+
+let playerGamepadBindings = loadPlayerGamepadBindings();
+
+function savePlayerGamepadBindings(bindings) {
+  localStorage.setItem(PLAYER_GAMEPAD_BINDINGS_STORAGE_KEY, JSON.stringify(bindings));
+  playerGamepadBindings = copyPlayerGamepadBindings(bindings);
+}
 
 const PLAYER_GAMEPAD_KEY_NAMES = Object.freeze({
   left: "a",
@@ -265,13 +316,18 @@ const PLAYER_GAMEPAD_KEY_NAMES = Object.freeze({
   attack: " ",
   previous: "q",
   next: "e",
-  summon: "s"
+  summon: "s",
+  number1: "1",
+  number2: "2",
+  number3: "3",
+  number4: "4",
+  number5: "5"
 });
 
 const playerGamepadState = new Map();
 
 function playerGamepadAxisPressed(gamepad, action) {
-  const binding = PLAYER_GAMEPAD_BINDINGS[action];
+  const binding = playerGamepadBindings[action];
   if (!binding || !binding.axes) return false;
   const [axis, direction] = binding.axes;
   const value = gamepad.axes[axis] || 0;
@@ -279,7 +335,7 @@ function playerGamepadAxisPressed(gamepad, action) {
 }
 
 function playerGamepadButtonPressed(gamepad, action) {
-  return (PLAYER_GAMEPAD_BINDINGS[action].buttons || []).some((index) => {
+  return (playerGamepadBindings[action].buttons || []).some((index) => {
     const button = gamepad.buttons[index];
     return button ? button.pressed || button.value > 0.5 : false;
   });
@@ -318,7 +374,7 @@ function updatePlayerGamepad() {
     return;
   }
 
-  Object.keys(PLAYER_GAMEPAD_BINDINGS).forEach((action) => {
+  Object.keys(playerGamepadBindings).forEach((action) => {
     const held = playerGamepadActionPressed(connectedGamepad, action);
     const wasHeld = playerGamepadState.get(action) === true;
     if (held && !wasHeld) dispatchPlayerGamepadKey(action, "keydown");
