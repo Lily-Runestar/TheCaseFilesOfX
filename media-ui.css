@@ -1,0 +1,126 @@
+:root {
+  --screen-width: 1920px;
+  --screen-height: 1080px;
+}
+
+html.media-scaled,
+body.media-scaled {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+body.media-scaled {
+  width: var(--screen-width);
+  height: var(--screen-height);
+  min-width: var(--screen-width);
+  min-height: var(--screen-height);
+  transform-origin: left top;
+  background-color: #111;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  cursor: none;
+}
+
+body.media-scaled.menu-main {
+  background-image: var(--media-main-menu-bg);
+}
+
+body.media-scaled:not(.menu-main) {
+  background-image: var(--media-menu-bg);
+}
+
+body.media-scaled a,
+body.media-scaled button,
+body.media-scaled input,
+body.media-scaled textarea {
+  cursor: none;
+}
+
+.media-button {
+  display: inline-grid;
+  place-items: center;
+  width: var(--media-button-width, auto);
+  height: var(--media-button-height, auto);
+  border: 0 !important;
+  background-color: transparent !important;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  color: transparent !important;
+  text-shadow: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  filter: none;
+  transition: filter 120ms ease;
+}
+
+.media-button,
+.media-button:hover,
+.media-button:focus-visible,
+.media-button.selected,
+.media-button:active {
+  width: var(--media-button-width, auto) !important;
+  height: var(--media-button-height, auto) !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: contain !important;
+  overflow: visible !important;
+}
+
+.media-button:hover,
+.media-button:focus-visible,
+.media-button.selected {
+  transform: none !important;
+  scale: 1 !important;
+  zoom: 1 !important;
+  background-position: center !important;
+  background-size: contain !important;
+  overflow: visible !important;
+  filter:
+    drop-shadow(0 0 3px rgba(255, 255, 255, 0.95))
+    drop-shadow(0 0 10px rgba(255, 255, 255, 0.72))
+    drop-shadow(0 0 18px rgba(255, 255, 255, 0.45));
+}
+
+.media-button:active,
+body.media-scaled .media-button:active {
+  transform: none !important;
+}
+
+body.media-scaled button,
+body.media-scaled a {
+  zoom: 1 !important;
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+body.media-scaled button.media-button,
+body.media-scaled a.media-button,
+body.media-scaled .case,
+body.media-scaled #hell-mode {
+  transform: none !important;
+  scale: 1 !important;
+  overflow: visible !important;
+}
+
+body.media-scaled button:not(.media-button),
+body.media-scaled a:not(.media-button) {
+  border-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.media-cursor {
+  position: absolute;
+  z-index: 2147483647;
+  width: 18.9px;
+  height: 28.7px;
+  pointer-events: none;
+  user-select: none;
+  transform-origin: left top;
+}

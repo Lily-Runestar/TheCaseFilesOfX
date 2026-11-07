@@ -6,7 +6,7 @@
   <title>Controls</title>
   <style>
     html,body{min-height:100%;margin:0;background:#111;color:#fff;font-family:Arial,sans-serif}
-    main{width:min(900px,calc(100% - 32px));margin:24px auto}
+    main{width:min(900px,calc(100% - 32px));height:1032px;margin:24px auto;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;padding-bottom:24px}
     h1{text-align:center}.row{display:grid;grid-template-columns:1fr 120px;align-items:center;border-bottom:1px solid #444;padding:8px}
     button,a.back{color:#fff;background:#292929;border:1px solid #777;padding:10px;cursor:pointer;text-decoration:none}
     .top{display:flex;justify-content:space-between;align-items:center}.capturing{background:#777;color:#111}
@@ -46,6 +46,7 @@
       <button id="reset-progress" type="button">RESET PROGRESS</button>
     </div>
   </main>
+  <script src="media-ui.js"></script>
   <script src="player controls/player-controls.js?v=lny2024-2"></script>
   <script>
     const bindingsElement = document.getElementById("bindings");
