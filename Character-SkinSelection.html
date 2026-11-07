@@ -13,14 +13,8 @@
     #characters button{min-width:48px;padding:10px;color:#fff;background:#292929;border:1px solid #777;cursor:pointer}
     #characters button.locked{opacity:.45}
     #characters button img,#cycle button img{width:34px;height:34px;object-fit:contain}
-    .skin{
-      width:225px;height:270px;padding:0;border:0;
-      background:transparent url("Media/Buttons/Unselected.png") center/contain no-repeat;
-      color:#fff;cursor:pointer;position:relative;
-      top:-12px;
-    }
-    .skin.selected{background-image:url("Media/Buttons/Selected.png")}
-    .skin img{position:absolute;left:50%;top:45%;width:165px;height:165px;object-fit:contain;transform:translate(-50%,-50%)}
+    .skin{width:150px;height:180px;background:#292929;border:2px solid #777;color:#fff}
+    .skin img{width:110px;height:110px;object-fit:contain}
     #cycle{display:flex;justify-content:center;gap:10px;background:#181818;border-top:2px solid #777;padding:20px}
     #cycle button{width:95px;height:95px;background:#292929;border:2px solid #777;color:#fff;font-size:24px}
     #cycle button.exchange{border-color:#ffd700}
@@ -34,7 +28,6 @@
     <div id="skins"></div>
     <div id="cycle" aria-label="Number cycle"></div>
   </main>
-  <script src="media-ui.js"></script>
   <script src="player controls/player-controls.js?v=lny2024-2"></script>
   <script>
     const status = document.getElementById("status");
@@ -113,8 +106,7 @@
       (await skinFolders(number)).forEach((folder) => {
         const button = document.createElement("button");
         button.className = "skin";
-        button.classList.toggle("selected", settings.skins[String(number)] === folder);
-        button.innerHTML = '<img alt="">';
+        button.innerHTML = `<img alt=""><div>${folder}</div>`;
         const preview = button.querySelector("img");
         preview.src = `Media/Player/${number}/${folder}/${number}_Still.png`;
         preview.onerror = () => { preview.style.display = "none"; };
@@ -155,7 +147,6 @@
 
     renderCycle();
     renderCharacters();
-    showSkins(1);
   </script>
 </body>
 </html>

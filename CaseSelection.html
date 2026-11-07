@@ -6,28 +6,11 @@
   <title>Case Selection</title>
   <style>
     html,body{min-height:100%;margin:0;background:#111;color:#fff;font-family:Arial,sans-serif}
-    main{width:100%;margin:0;text-align:center}
-    main h1{
-      position:absolute;left:50%;top:7%;transform:translateX(-50%);
-      width:337px;height:99px;margin:0;overflow:hidden;
-      background:url("Media/Buttons/CaseSelect.png") center/contain no-repeat;
-      color:transparent;
-    }
-    #cases{position:absolute;left:50%;top:43%;transform:translate(-50%,-50%);display:flex;justify-content:center;align-items:center;gap:24px}
-    .case{padding:0;background:transparent;cursor:pointer;background-size:contain}
-    .difficulty{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:12px;background:transparent;border:0;padding:16px}
+    main{width:min(900px,calc(100% - 32px));margin:24px auto;text-align:center}
+    #cases{display:flex;flex-wrap:wrap;justify-content:center;gap:16px}
+    .case{min-width:180px;padding:24px;background:#292929;border:1px solid #777;cursor:pointer}
+    .difficulty{position:fixed;left:0;right:0;bottom:0;display:flex;align-items:center;gap:12px;background:#181818;border-top:2px solid #777;padding:16px}
     #hell-mode{margin-left:auto}
-    #hell-mode{
-      width:100px;
-      height:82px;
-      min-height:82px;
-      background-color:transparent;
-      background-image:url("Media/Difficulty/HellOFF.png");
-      background-position:left bottom;
-      background-repeat:no-repeat;
-      background-size:auto 46px;
-      color:transparent;
-    }
     button,a.back{color:#fff;background:#292929;border:1px solid #777;padding:10px 18px;cursor:pointer;text-decoration:none}
     button.selected{background:#777;color:#111}
     .controls{position:absolute;left:16px;top:16px}
@@ -45,38 +28,12 @@
     <button data-difficulty="hard">HARD</button>
     <button id="hell-mode" type="button" disabled>HELL</button>
   </div>
-  <script src="media-ui.js"></script>
   <script src="player controls/player-controls.js?v=lny2024-2"></script>
   <script>
     const casesElement = document.getElementById("cases");
     const settings = loadPlayerSettings();
     let difficulty = settings.difficulty;
     let hellMode = settings.hell === true;
-
-    function isCase67Complete() {
-      try {
-        const progress = JSON.parse(localStorage.getItem("sixtySevenProgress") || "{}");
-        return progress.completed === true ||
-          (progress.chapters && progress.chapters["7"] === "UNLOCKED");
-      } catch (error) {
-        console.warn("Case 67 progress could not be read.", error);
-        return false;
-      }
-    }
-
-    function isCaseCompleted(folder) {
-      if (folder === "Case67") return isCase67Complete();
-      if (folder === "CaseChristmasNightmare") {
-        try {
-          const progress = JSON.parse(localStorage.getItem("sixtySevenProgress") || "{}");
-          return progress.cases && progress.cases.CaseChristmasNightmare === "COMPLETED"
-            || localStorage.getItem("caseChristmasNightmareCompleted") === "true";
-        } catch (error) {
-          return localStorage.getItem("caseChristmasNightmareCompleted") === "true";
-        }
-      }
-      return false;
-    }
 
     async function discoverCases() {
       const cases = ["Case67", "CaseChristmasNightmare"];
@@ -97,23 +54,15 @@
     function renderCases(cases) {
       casesElement.innerHTML = "";
       cases.forEach((folder) => {
-        const hellAvailable = isCaseCompleted(folder);
         const button = document.createElement("button");
         button.className = "case";
         button.textContent = folder.replace(/^Case/, "CASE ");
-        button.dataset.mediaKey = folder === "Case67" ? "case67" : "casechristmasnightmare";
-        if (hellMode) {
-          if (hellAvailable) {
-            button.dataset.mediaKey = folder === "Case67" ? "hell67" : "hellchristmasnightmare";
-          }
-        }
         button.addEventListener("click", () => {
           settings.difficulty = difficulty;
           settings.hell = hellMode;
           savePlayerSettings(settings);
           const startingHealth = hellMode ? 1 : { easy: 5, medium: 4, hard: 3 }[difficulty];
-          const destination = hellMode && hellAvailable ? folder.replace(/^Case/, "Hell") : folder;
-          if (!hellAvailable && hellMode) return;
+          const destination = hellMode ? folder.replace(/^Case/, "Hell") : folder;
           window.location.href = `${destination}/index.html${hellMode ? "" : `?hp=${startingHealth}`}`;
         });
         casesElement.appendChild(button);
@@ -128,41 +77,26 @@
       button.classList.toggle("selected", button.dataset.difficulty === difficulty);
     });
 
-    const hellButton = document.getElementById("hell-mode");
-    const completedCases = ["Case67", "CaseChristmasNightmare"].filter(isCaseCompleted);
-    hellButton.disabled = completedCases.length === 0;
-    hellButton.title = completedCases.length ? "Enable Hell mode" : "Complete a case to unlock Hell mode";
-    if (!completedCases.length) hellMode = false;
-    hellButton.classList.toggle("selected", hellMode);
-    let hellAnimation = null;
-    let hellFrame = 0;
-    function renderHellButton() {
-      if (!hellMode) {
-        window.clearInterval(hellAnimation);
-        hellAnimation = null;
-        hellFrame = 0;
-        hellButton.style.backgroundImage = 'url("Media/Difficulty/HellOFF.png")';
-        hellButton.style.backgroundSize = "auto 46px";
-        return;
+    function isCase67Complete() {
+      try {
+        const progress = JSON.parse(localStorage.getItem("sixtySevenProgress") || "{}");
+        return progress.completed === true ||
+          (progress.chapters && progress.chapters["7"] === "UNLOCKED");
+      } catch (error) {
+        console.warn("Case 67 progress could not be read.", error);
+        return false;
       }
-      const frames = ["HellON1.png", "HellON2.png", "HellON3.png"];
-      const frameHeights = [80, 82, 81];
-      window.clearInterval(hellAnimation);
-      hellAnimation = window.setInterval(() => {
-        hellFrame = (hellFrame + 1) % frames.length;
-        hellButton.style.backgroundImage = `url("Media/Difficulty/${frames[hellFrame]}")`;
-        hellButton.style.backgroundSize = `auto ${frameHeights[hellFrame]}px`;
-      }, 180);
-      hellButton.style.backgroundImage = `url("Media/Difficulty/${frames[0]}")`;
-      hellButton.style.backgroundSize = "auto 80px";
     }
+
+    const hellButton = document.getElementById("hell-mode");
+    const case67Complete = isCase67Complete();
+    hellButton.disabled = !case67Complete;
+    hellButton.title = case67Complete ? "Enable Hell mode for every case" : "Complete Case 67 to unlock Hell mode";
+    hellButton.classList.toggle("selected", hellMode);
     hellButton.addEventListener("click", () => {
       hellMode = !hellMode;
       hellButton.classList.toggle("selected", hellMode);
-      renderHellButton();
-      discoverCases().then(renderCases);
     });
-    renderHellButton();
     discoverCases().then(renderCases);
   </script>
 </body>
