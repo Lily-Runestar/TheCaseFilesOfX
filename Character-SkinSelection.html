@@ -70,7 +70,7 @@
     function renderCharacters() {
       const charactersElement = document.getElementById("characters");
       charactersElement.innerHTML = "";
-      [-1, 1, 2, 3, 4, 5].forEach((number) => {
+      [-1, 1, 2, 3, 4, 5, 16, 44].forEach((number) => {
         const button = document.createElement("button");
         addCharacterIcon(button, number);
         button.classList.toggle("locked", !isCharacterUnlocked(number));
@@ -96,12 +96,14 @@
 
     async function skinFolders(number) {
       const knownFolders = {
-          "-1": ["Standard"],
+          "-1": ["Standard", "LNY2024"],
         "1": ["Standard", "Christmas"],
           "2": ["Standard"],
           "3": ["Standard", "LNY2024"],
           "4": ["Standard", "Halloween"],
-          "5": ["Standard"]
+          "5": ["Standard"],
+          "16": ["Standard", "Christmas"],
+          "44": ["Standard", "Halloween"]
       };
       return knownFolders[String(number)] || ["Standard"];
     }
@@ -152,6 +154,28 @@
         cycleElement.appendChild(button);
       });
     }
+
+    function unlockAllCharacters() {
+      const allCharacters = [-1, 1, 2, 3, 4, 5, 16, 44];
+      allCharacters.forEach((number) => { progress.characters[String(number)] = "UNLOCKED"; });
+      try {
+        localStorage.setItem("sixtySevenProgress", JSON.stringify(progress));
+      } catch (error) {
+        status.textContent = "Unlocks could not be saved.";
+        return;
+      }
+      renderCharacters();
+      renderCycle();
+      showSkins(selectedNumber ?? 1);
+      status.textContent = "All characters and skins unlocked.";
+    }
+
+    let typedCharacters = "";
+    document.addEventListener("keydown", (event) => {
+      if (event.repeat || event.key.length !== 1) return;
+      typedCharacters = (typedCharacters + event.key.toLowerCase()).replace(/[^a-z]/g, "").slice(-"sixtyseven".length);
+      if (typedCharacters === "sixtyseven") unlockAllCharacters();
+    });
 
     renderCycle();
     renderCharacters();

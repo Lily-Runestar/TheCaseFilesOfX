@@ -365,6 +365,16 @@
         if (name === "SWING") return ["Charge"];
         return ["Still"];
       }
+      if (currentNumber === 16) {
+        if (name === "WALK") return ["Still", "Walk"];
+        if (name === "SWING") return ["ThrowF1", "ThrowF2"];
+        return ["Still"];
+      }
+      if (currentNumber === 44) {
+        if (name === "WALK") return ["WalkF1", "WalkF2"];
+        if (["JUMP", "FALL", "SWING"].includes(name)) return ["TravelF1", "TravelF2"];
+        return ["Still"];
+      }
       if (currentNumber === 3) {
         if (name === "WALK") return ["Walk"];
         if (name === "SWING") return ["Swing", "Release"];
@@ -411,7 +421,7 @@
       numberImage.src = `../../Media/Images/${number}.png`;
       numberImage.alt = `Number ${number}`;
       numberImage.hidden = false;
-      const iconScale = { "-1": 0.28, "1": 0.2933, "2": 0.32, "3": 0.26, "4": 0.26, "5": 0.30 };
+      const iconScale = { "-1": 0.28, "1": 0.2933, "2": 0.32, "3": 0.26, "4": 0.26, "5": 0.30, "16": 0.30, "44": 0.30 };
       const iconOffset = number === 1 || number === 2 ? 20 : 0;
       numberImage.style.transform =
         `translate(${iconOffset}px, 3px) scale(${iconScale[number]})`;
@@ -452,8 +462,8 @@
       return [enemyProjectile ? "StillAlt" : "Still"];
     }
 
-    function updateVerticalMovement(y, velocityY, grounded, dt) {
-      if (!grounded) {
+    function updateVerticalMovement(y, velocityY, grounded, dt, applyGravity = true) {
+      if (!grounded && applyGravity) {
         velocityY -= GRAVITY * dt;
         y += velocityY * dt;
       }
@@ -576,6 +586,16 @@
         playerDashDirection = playerFacing;
         playerDashHit = false;
         playerInvulnerable = Math.max(playerInvulnerable, 0.5);
+      } else if (currentNumber === 44) {
+        playerDashTime = 0.24;
+        playerDashDirection = playerFacing;
+        playerDashHit = false;
+        playerInvulnerable = Math.max(playerInvulnerable, 0.5);
+        playerVelocityY = 0;
+      } else if (currentNumber === 16) {
+        playerProjectile = { kind: "bomb", x: playerX + playerFacing * 36, y: playerY + 40, direction: playerFacing, elapsed: 0, phase: "flying", phaseTime: 0, hit: false };
+        projectileElement.src = playerSpritePath(16, "Bomb");
+        projectileElement.hidden = false;
       }
     }
 
@@ -608,6 +628,25 @@
           playerProjectile = null;
           projectileElement.hidden = true;
           return;
+        }
+      } else if (projectile.kind === "bomb") {
+        if (projectile.phase === "flying") {
+          projectile.x += projectile.direction * getPlayerBehavior(16).projectileSpeed * dt;
+          if (projectile.elapsed >= getPlayerBehavior(16).bombFuse) {
+            projectile.phase = "exploding";
+            projectile.phaseTime = 0;
+            projectileElement.src = playerSpritePath(16, "Explode");
+          }
+        } else {
+          if (!projectile.hit && Math.abs(projectile.x - enemyX) < 70 && Math.abs(projectile.y - (enemyY + 52)) < 88) {
+            projectile.hit = true;
+            damageEnemy(getPlayerDamage(16, "bomb"));
+          }
+          if (projectile.phaseTime >= getPlayerBehavior(16).explosionDuration) {
+            playerProjectile = null;
+            projectileElement.hidden = true;
+            return;
+          }
         }
       } else if (projectile.phase === "outbound") {
         projectile.x += projectile.direction * 300 * dt;
@@ -914,8 +953,9 @@
           (playerAnimation === "SWING" && playerAttackKind !== "jump"))
           ? playerFlip
           : 1;
+      const travelRotation = currentNumber === 44 && !playerGrounded ? (playerVelocityY > 0 ? -90 : playerVelocityY < 0 ? 90 : 0) : 0;
       playerElement.style.transform =
-        `translateX(-50%) scale(${PLAYER_SCALE}) scaleX(${facingFlip * animationFlip})`;
+        `translateX(-50%) scale(${PLAYER_SCALE}) rotate(${travelRotation}deg) scaleX(${facingFlip * animationFlip})`;
       const enemySpriteFlip = enemyFacing === 1 ? -1 : 1;
       enemyElement.style.left =
         `${enemyX - enemyVisualOffsetX * enemySpriteFlip}px`;
@@ -937,9 +977,9 @@
           Math.abs(enemyY - playerY) < 92
         ) {
           playerDashHit = true;
-          damageEnemy(getPlayerDamage(-1,"dash"));
+          damageEnemy(getPlayerDamage(currentNumber,"dash"));
         }
-      } else if (move !== 0 && canPlayerMove({finished,attackTime:playerAttackTime,dashTime:playerDashTime,recallingBlade:playerProjectile?.kind=== "blade"})) {
+      } else if (move !== 0 && (playerGrounded || canPlayerControlInAir(currentNumber)) && canPlayerMove({finished,attackTime:playerAttackTime,dashTime:playerDashTime,recallingBlade:playerProjectile?.kind=== "blade"})) {
         playerX = Math.max(PLAYER_WIDTH / 2, Math.min(STAGE_WIDTH - PLAYER_WIDTH / 2, playerX + move * PLAYER_SPEED * dt));
         playerFacing = move;
       }
@@ -955,6 +995,8 @@
             playerAttackHits() &&
             currentNumber !== 3 &&
             currentNumber !== 5 &&
+            currentNumber !== 16 &&
+            currentNumber !== 44 &&
             currentNumber !== -1
           ) {
             damageEnemy(meleeDamage);
@@ -963,7 +1005,8 @@
       }
 
       const playerPhysics = updateVerticalMovement(
-        playerY, playerVelocityY, playerGrounded, dt
+        playerY, playerVelocityY, playerGrounded, dt,
+        shouldApplyPlayerGravity(currentNumber, playerAttackTime > 0)
       );
       playerY = playerPhysics.y;
       playerVelocityY = playerPhysics.velocityY;
@@ -1004,11 +1047,11 @@
       if (key === keyBindings.right || key === "arrowright") keys.right = true;
       if (
         (key === keyBindings.jump || key === "arrowup") &&
-        currentNumber !== -1 &&
+        canPlayerJump(currentNumber) &&
         !event.repeat &&
         playerGrounded
       ) {
-        playerVelocityY = currentNumber === 4 ? NUMBER_4_JUMP_POWER : JUMP_POWER;
+        playerVelocityY = currentNumber === 4 ? NUMBER_4_JUMP_POWER : getPlayerJumpPower(currentNumber);
         playerGrounded = false;
         if (currentNumber === 4) {
           attackPlayer("jump");

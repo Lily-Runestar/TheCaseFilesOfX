@@ -33,16 +33,18 @@ const PLAYER_BINDING_LABELS = Object.freeze({
 
 const PLAYER_SETTINGS_KEY = "sixtySevenPlayerSettings";
 const PLAYER_SKINS = Object.freeze({
-  "-1": Object.freeze(["Standard"]),
+  "-1": Object.freeze(["Standard", "LNY2024"]),
   "1": Object.freeze(["Standard", "Christmas"]),
   "2": Object.freeze(["Standard"]),
   "3": Object.freeze(["Standard", "LNY2024"]),
   "4": Object.freeze(["Standard", "Halloween"]),
-  "5": Object.freeze(["Standard"])
+  "5": Object.freeze(["Standard"]),
+  "16": Object.freeze(["Standard", "Christmas"]),
+  "44": Object.freeze(["Standard", "Halloween"])
 });
 const DEFAULT_PLAYER_SETTINGS = Object.freeze({
   cycle: [-1, 1, 2, 3, 4],
-  skins: { "-1": "Standard", "1": "Standard", "2": "Standard", "3": "Standard", "4": "Standard", "5": "Standard" },
+  skins: { "-1": "Standard", "1": "Standard", "2": "Standard", "3": "Standard", "4": "Standard", "5": "Standard", "16": "Standard", "44": "Standard" },
   difficulty: "easy",
   hell: false
 });
@@ -50,7 +52,7 @@ const DEFAULT_PLAYER_SETTINGS = Object.freeze({
 function loadPlayerSettings() {
   try {
     const saved = JSON.parse(localStorage.getItem(PLAYER_SETTINGS_KEY) || "{}");
-    const cycle = Array.isArray(saved.cycle) ? saved.cycle.filter((n) => [-1, 1, 2, 3, 4, 5].includes(n)) : [];
+    const cycle = Array.isArray(saved.cycle) ? saved.cycle.filter((n) => [-1, 1, 2, 3, 4, 5, 16, 44].includes(n)) : [];
     const savedSkins = saved.skins && typeof saved.skins === "object" ? saved.skins : {};
     const skins = { ...DEFAULT_PLAYER_SETTINGS.skins };
     for (const number of Object.keys(PLAYER_SKINS)) {
@@ -93,7 +95,10 @@ function playerSpritePath(number, frameName) {
   const availableSkins = PLAYER_SKINS[String(number)] || PLAYER_SKINS["1"];
   const selectedSkin = settings.skins[String(number)];
   const skin = availableSkins.includes(selectedSkin) ? selectedSkin : "Standard";
-  return new URL(`../Media/Player/${number}/${skin}/${number}_${frameName}.png`, PLAYER_CONTROLS_SCRIPT_URL).href;
+  const filename = Number(number) === 16 && ["Bomb", "Explode"].includes(frameName)
+    ? `${frameName}.png`
+    : `${number}_${frameName}.png`;
+  return new URL(`../Media/Player/${number}/${skin}/${filename}`, PLAYER_CONTROLS_SCRIPT_URL).href;
 }
 
 const PLAYER_PROFILE = Object.freeze({
@@ -131,7 +136,9 @@ const PLAYER_ATTACK_DAMAGE = Object.freeze({
   "2": Object.freeze({ space: 1, melee: 1 }),
   "3": Object.freeze({ space: 2, arrow: 2 }),
   "4": Object.freeze({ jump: 1, space: 2, melee: 2 }),
-  "5": Object.freeze({ space: 3, melee: 3, outbound: 1, returning: 3, blade: 3 })
+  "5": Object.freeze({ space: 3, melee: 3, outbound: 1, returning: 3, blade: 3 }),
+  "16": Object.freeze({ space: 2, melee: 2, bomb: 2 }),
+  "44": Object.freeze({ space: 2, melee: 2, dash: 2 })
 });
 
 const PLAYER_ANIMATION_FRAMES = Object.freeze({
@@ -140,25 +147,46 @@ const PLAYER_ANIMATION_FRAMES = Object.freeze({
   "2": Object.freeze({ STILL: ["Still"], WALK: ["Still", "WalkF1", "WalkF2", "WalkF1", "WalkF2"], JUMP: ["Jump"], FALL: ["Fall"], ATTACK: ["Still", "SwingF1", "SwingF2"] }),
   "3": Object.freeze({ STILL: ["Still"], WALK: ["Walk"], JUMP: ["Jump"], FALL: ["Fall"], ATTACK: ["Swing", "Release"] }),
   "4": Object.freeze({ STILL: ["Still"], WALK: ["WalkF1", "WalkF2"], JUMP: ["Jump"], FALL: ["Sweep", "Sweep"], ATTACK: ["Sweep", "Sweep", "Sweep", "Sweep"] }),
-  "5": Object.freeze({ STILL: ["Still"], WALK: ["Walk", "Still", "WalkAlt", "StillAlt"], JUMP: ["Still", "StillAlt"], FALL: ["Still", "StillAlt"], ATTACK: ["StillAlt", "StillAlt"] })
+  "5": Object.freeze({ STILL: ["Still"], WALK: ["Walk", "Still", "WalkAlt", "StillAlt"], JUMP: ["Still", "StillAlt"], FALL: ["Still", "StillAlt"], ATTACK: ["StillAlt", "StillAlt"] }),
+  "16": Object.freeze({ STILL: ["Still"], WALK: ["Still", "Walk"], ATTACK: ["ThrowF1", "ThrowF2"] }),
+  "44": Object.freeze({ STILL: ["Still"], WALK: ["WalkF1", "WalkF2"], JUMP: ["TravelF1", "TravelF2"], FALL: ["TravelF1", "TravelF2"], ATTACK: ["TravelF1", "TravelF2"] })
 });
 
 const PLAYER_CHARACTER_BEHAVIOR = Object.freeze({
-  "-1": Object.freeze({ attackLocked: true, dashSpeed: 900, dashDuration: 0.24, invulnerable: 0.5 }),
+  "-1": Object.freeze({ attackLocked: true, noJump: true, dashSpeed: 900, dashDuration: 0.24, invulnerable: 0.5 }),
   "1": Object.freeze({ attackLocked: true, swingHold: 0.35, hitHold: 0.7 }),
   "2": Object.freeze({ attackLocked: true }),
   "3": Object.freeze({ attackLocked: true, projectileSpeed: 620, projectileLifetime: 1.3 }),
   "4": Object.freeze({ attackLocked: true, mirrorInAir: true, mirrorOnAttack: true, jumpPower: 1050, fallFrameRate: 70 }),
-  "5": Object.freeze({ attackLocked: true, projectileSpeed: 300, recallSpeed: 480, recallDelay: 0.45, travelOnRecall: true })
+  "5": Object.freeze({ attackLocked: true, projectileSpeed: 300, recallSpeed: 480, recallDelay: 0.45, travelOnRecall: true }),
+  "16": Object.freeze({ attackLocked: true, noJump: true, projectileSpeed: 520, bombFuse: 0.7, explosionDuration: 0.35 }),
+  "44": Object.freeze({ attackLocked: true, jumpPower: 1050, airControl: false, gravityWhileAttacking: false, dashSpeed: 900, dashDuration: 0.24, invulnerable: 0.5 })
 });
 
 function getPlayerBehavior(number) {
   return PLAYER_CHARACTER_BEHAVIOR[String(number)] || PLAYER_CHARACTER_BEHAVIOR["1"];
 }
 
+function canPlayerJump(number) {
+  return getPlayerBehavior(number).noJump !== true;
+}
+
+function getPlayerJumpPower(number) {
+  return getPlayerBehavior(number).jumpPower || PLAYER_PROFILE.jumpPower;
+}
+
+function canPlayerControlInAir(number) {
+  return getPlayerBehavior(number).airControl !== false;
+}
+
+function shouldApplyPlayerGravity(number, attacking) {
+  return !attacking || getPlayerBehavior(number).gravityWhileAttacking !== false;
+}
+
 function createPlayerProjectile(number, x, y, direction) {
   if (Number(number) === 3) return { kind: "arrow", x: x + direction * 45, y: y + 48, direction, elapsed: 0 };
   if (Number(number) === 5) return { kind: "blade", x: x + direction * 42, y: y + 50, direction, elapsed: 0, phase: "outbound", phaseTime: 0, rotation: 0, outboundHit: false, returnHit: false };
+  if (Number(number) === 16) return { kind: "bomb", x: x + direction * 36, y: y + 40, direction, elapsed: 0, phase: "flying", phaseTime: 0 };
   return null;
 }
 
@@ -170,6 +198,20 @@ function updatePlayerProjectileState(projectile, dt, playerX, width) {
     projectile.x += projectile.direction * getPlayerBehavior(3).projectileSpeed * dt;
     if (projectile.elapsed >= getPlayerBehavior(3).projectileLifetime || projectile.x < 0 || projectile.x > width) return { projectile: null, hit: null, expired: true };
     return { projectile, hit: projectile.phase === "hit" ? "arrow" : null };
+  }
+  if (projectile.kind === "bomb") {
+    const behavior = getPlayerBehavior(16);
+    if (projectile.phase === "flying") {
+      projectile.x += projectile.direction * behavior.projectileSpeed * dt;
+      if (projectile.elapsed >= behavior.bombFuse) {
+        projectile.phase = "exploding";
+        projectile.phaseTime = 0;
+      }
+    } else {
+      if (projectile.phaseTime >= behavior.explosionDuration) return { projectile: null, hit: null, expired: true };
+      return { projectile, hit: "bomb" };
+    }
+    return { projectile, hit: null };
   }
   if (projectile.phase === "outbound") {
     projectile.x += projectile.direction * getPlayerBehavior(5).projectileSpeed * dt;
@@ -217,6 +259,7 @@ function getPlayerFrames(number, state, attackKind = "space") {
     if (Number(number) === 3) return ["Swing", "Release"];
     if (Number(number) === 4) return attackKind === "jump" ? ["Jump"] : ["Sweep", "Sweep", "Sweep", "Sweep"];
     if (Number(number) === -1) return ["Charge"];
+    if (Number(number) === 16) return frames.ATTACK;
     return frames.ATTACK;
   }
   if (Number(number) === 5 && state === "STILL") return ["Still"];

@@ -57,7 +57,7 @@
     const numberImage=document.getElementById("NUMBER-IMAGE");
     const messageElement=document.getElementById("MESSAGE");
     const keys={left:false,right:false};
-    const AVAILABLE_NUMBERS=[-1,1,2,3,4,5];
+    const AVAILABLE_NUMBERS=[-1,1,2,3,4,5,16,44];
     const PLAYER_SPEED=300,JUMP_POWER=798.4,NUMBER_4_JUMP_POWER=1050,GRAVITY=1900;
     const FLOOR_Y=0,FLOOR_HEIGHT=78,PLAYER_WIDTH=44,PLAYER_HEIGHT=78,PLAYER_SCALE=.56,BOSS_SCALE=.62;
 
@@ -113,7 +113,7 @@
       if(!unlockedNumbers.includes(number))return;
       currentNumber=number;
       numberImage.src=`../../Media/Images/${number}.png`;numberImage.alt=`Number ${number}`;
-      const scales={"-1":.28,"1":.2933,"2":.32,"3":.26,"4":.26,"5":.30};
+      const scales={"-1":.28,"1":.2933,"2":.32,"3":.26,"4":.26,"5":.30,"16":.30,"44":.30};
       numberImage.style.transform=`translate(${number===1||number===2?20:0}px,3px) scale(${scales[number]})`;
       setPlayerAnimation(!playerGrounded?(playerVelocityY>0?"JUMP":"FALL"):(keys.left||keys.right?"WALK":"STILL"),true);
     }
@@ -176,9 +176,10 @@
       if(playerAttackTimer>0)return;
       playerAttackTimer=.36;playerAttackHit=false;playerAttackKind=kind;setNumberFacingTarget();
       setPlayerAnimation("SWING",true);
-      if(currentNumber===-1){
+      if(currentNumber===-1||currentNumber===44){
         playerDashTimer=.24;playerDashDirection=playerFacing;playerDashHit=false;
         playerInvulnerable=Math.max(playerInvulnerable,.5);
+        if(currentNumber===44)playerVelocityY=0;
       }
       if(currentNumber===3){
         playerProjectile={kind:"arrow",x:playerX+playerFacing*45,y:playerY+48,direction:playerFacing,elapsed:0};
@@ -189,6 +190,9 @@
           phase:"outbound",phaseTime:0,outboundHits:new Set(),returnHits:new Set(),rotation:0
         };
         projectileElement.src="../../Media/Player/5/Standard/5_Alt.png";projectileElement.hidden=false;
+      }else if(currentNumber===16){
+        playerProjectile={kind:"bomb",x:playerX+playerFacing*36,y:playerY+40,direction:playerFacing,elapsed:0,phase:"flying",phaseTime:0,hitTargets:new Set()};
+        projectileElement.src=playerSpritePath(16,"Bomb");projectileElement.hidden=false;
       }
     }
     function updateProjectile(dt){
@@ -206,6 +210,16 @@
         }
         if(p.elapsed>=1.3||p.x<0||p.x>GAME.clientWidth){
           playerProjectile=null;projectileElement.hidden=true;return;
+        }
+      }else if(p.kind==="bomb"){
+        if(p.phase==="flying"){
+          p.x+=p.direction*getPlayerBehavior(16).projectileSpeed*dt;
+          if(p.elapsed>=getPlayerBehavior(16).bombFuse){p.phase="exploding";p.phaseTime=0;projectileElement.src=playerSpritePath(16,"Explode")}
+        }else{
+          for(const [number,x] of [[6,boss6X],[7,boss7X]]){
+            if(!p.hitTargets.has(number)&&Math.abs(p.x-x)<70&&Math.abs(p.y-55)<88){p.hitTargets.add(number);damageBoss(number,getPlayerDamage(16,"bomb"));if(finished)return}
+          }
+          if(p.phaseTime>=getPlayerBehavior(16).explosionDuration){playerProjectile=null;projectileElement.hidden=true;return}
         }
       }else if(p.phase==="outbound"){
         p.x+=p.direction*300*dt;
@@ -322,7 +336,8 @@
     function draw(){
       playerElement.style.left=`${playerX}px`;playerElement.style.bottom=`${FLOOR_HEIGHT+playerY}px`;
       const animationFlip=currentNumber===4&&(playerAnimation==="FALL"||(playerAnimation==="SWING"&&playerAttackKind!=="jump"))?playerFlip:1;
-      playerElement.style.transform=`translateX(-50%) scale(${PLAYER_SCALE}) scaleX(${(playerFacing===1?-1:1)*animationFlip})`;
+      const travelRotation=currentNumber===44&&!playerGrounded?(playerVelocityY>0?-90:playerVelocityY<0?90:0):0;
+      playerElement.style.transform=`translateX(-50%) scale(${PLAYER_SCALE}) rotate(${travelRotation}deg) scaleX(${(playerFacing===1?-1:1)*animationFlip})`;
       boss6Element.classList.toggle("casting",boss6Health>0&&spellChannelTimer>0);
       boss6Element.style.left=`${boss6X}px`;boss6Element.style.transform=`translateX(-50%) scale(${BOSS_SCALE}) scaleX(${boss6Facing===1?-1:1})`;
       boss7Element.style.left=`${boss7X}px`;boss7Element.style.transform=`translateX(-50%) scale(${BOSS_SCALE}) scaleX(${boss7Facing===1?-1:1})`;
@@ -334,21 +349,21 @@
       if(playerDashTimer>0){
         playerDashTimer=Math.max(0,playerDashTimer-dt);playerX+=playerDashDirection*900*dt;
         if(!playerDashHit){
-          for(const [number,x] of [[6,boss6X],[7,boss7X]])if(Math.abs(x-playerX)<60){playerDashHit=true;damageBoss(number,getPlayerDamage(-1,"dash"))}
+          for(const [number,x] of [[6,boss6X],[7,boss7X]])if(Math.abs(x-playerX)<60){playerDashHit=true;damageBoss(number,getPlayerDamage(currentNumber,"dash"))}
         }
-      }else if(movement&&playerAttackTimer<=0){
+      }else if(movement&&playerAttackTimer<=0&&(playerGrounded||canPlayerControlInAir(currentNumber))){
         playerX+=movement*PLAYER_SPEED*dt;playerFacing=movement;
       }
       if(playerAttackTimer>0){
         playerAttackTimer-=dt;
         if(!playerAttackHit&&playerAttackTimer<=.18){
           playerAttackHit=true;
-          if(currentNumber!==3&&currentNumber!==5&&currentNumber!==-1){
+          if(currentNumber!==3&&currentNumber!==5&&currentNumber!==16&&currentNumber!==44&&currentNumber!==-1){
             for(const [number,x] of [[6,boss6X],[7,boss7X]])if(meleeHitsBoss(x,0,playerFacing))damageBoss(number,getPlayerDamage(currentNumber));
           }
         }
       }
-      if(!playerGrounded){playerVelocityY-=GRAVITY*dt;playerY+=playerVelocityY*dt}
+      if(!playerGrounded&&shouldApplyPlayerGravity(currentNumber,playerAttackTimer>0)){playerVelocityY-=GRAVITY*dt;playerY+=playerVelocityY*dt}
       if(playerY<=FLOOR_Y){playerY=FLOOR_Y;playerVelocityY=0;playerGrounded=true}
       else playerGrounded=false;
       playerX=Math.max(PLAYER_WIDTH/2,Math.min(GAME.clientWidth-PLAYER_WIDTH/2,playerX));
@@ -380,8 +395,8 @@
       if(finished)return;
       if(key===keyBindings.left||key==="arrowleft")keys.left=true;
       if(key===keyBindings.right||key==="arrowright")keys.right=true;
-      if((key===keyBindings.jump||key==="arrowup")&&!event.repeat&&playerGrounded&&currentNumber!==-1){
-        playerVelocityY=currentNumber===4?NUMBER_4_JUMP_POWER:JUMP_POWER;playerGrounded=false;
+      if((key===keyBindings.jump||key==="arrowup")&&!event.repeat&&playerGrounded&&canPlayerJump(currentNumber)){
+        playerVelocityY=currentNumber===4?NUMBER_4_JUMP_POWER:getPlayerJumpPower(currentNumber);playerGrounded=false;
         if(currentNumber===4)attackPlayer("jump");else setPlayerAnimation("JUMP",true);
       }
       if(key===keyBindings.attack&&!event.repeat)attackPlayer();

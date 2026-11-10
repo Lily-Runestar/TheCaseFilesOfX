@@ -20,7 +20,9 @@ function createDefaultProgress() {
       "3": "LOCKED",
       "4": "LOCKED",
       "5": "LOCKED",
-      "-1": "LOCKED"
+      "-1": "LOCKED",
+      "16": "LOCKED",
+      "44": "UNLOCKED"
     },
     keys: { summon: "LOCKED" }
   };

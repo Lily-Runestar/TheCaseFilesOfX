@@ -68,7 +68,7 @@ body{display:flex;align-items:center;justify-content:center}
 <script src="../../player controls/player-controls.js?v=lny2024-2"></script>
 <script>
 
-const AVAILABLE_NUMBERS=[-1,1,2,3,4,5];
+const AVAILABLE_NUMBERS=[-1,1,2,3,4,5,16,44];
 
 const GAME=document.getElementById("GAME"), WORLD=document.getElementById("WORLD"), SCENERY=document.getElementById("SCENERY"), PLAYER=document.getElementById("PLAYER"), PROJECTILE=document.getElementById("PROJECTILE");
 
@@ -174,6 +174,8 @@ function SET_FRAME(frameName){const src=PLAYER_PATH(frameName);if(!PLAYER.src.en
 
 function getChapterPlayerAnimationFrames(name){
   if(currentNumber===-1){if(name==="WALK")return["Walk","Walk"];if(name==="DASH")return["Charge"];return["Still"]}
+  if(currentNumber===16){if(name==="WALK")return["Still","Walk"];if(name==="SWING")return["ThrowF1","ThrowF2"];return["Still"]}
+  if(currentNumber===44){if(name==="WALK")return["WalkF1","WalkF2"];if(name==="JUMP"||name==="FALL")return["TravelF1","TravelF2"];if(name==="DASH")return["TravelF1"];return["Still"]}
   if(currentNumber===3){if(name==="WALK")return["Walk"];if(name==="SWING")return["Swing","Release"];return({STILL:["Still"],JUMP:["Jump"],FALL:["Fall"]})[name]||ANIMATIONS[name]}
   if(currentNumber===4){if(name==="WALK")return["WalkF1","WalkF2"];if(name==="SWING")return["Sweep","Sweep","Sweep","Sweep"];if(name==="FALL")return["Sweep","Sweep"];return({STILL:["Still"],JUMP:["Jump"]})[name]||ANIMATIONS[name]}
   if(currentNumber===5){const bladeActive=projectile&&projectile.kind==="number-five";if(name==="STILL")return[bladeActive?"StillAlt":"Still"];if(name==="WALK")return bladeActive?["WalkAlt","StillAlt"]:["Walk","Still"];if(name==="SWING")return["StillAlt","StillAlt"];if(name==="JUMP"||name==="FALL")return[bladeActive?"StillAlt":"Still"]}
@@ -209,7 +211,7 @@ function UPDATE_ANIMATION(dt){
   animationFrame%=frames.length;SET_FRAME(frames[animationFrame])
 }
 
-function SET_NUMBER(n){if(!unlockedNumbers.includes(n))return;currentNumber=n;numberImage.src=`../../Media/Images/${n}.png`;numberImage.alt=`Number ${n}`;numberImage.hidden=false;const iconScale={"-1":0.28,"1":0.2933,"2":0.32,"3":0.26,"4":0.26,"5":0.30};const iconOffset=n===1||n===2?20:0;numberImage.style.transform=`translate(${iconOffset}px,3px) scale(${iconScale[n]})`;projectile=null;PROJECTILE.hidden=true;dashTime=0;actionLocked=false;attacking=false;const animation=!onGround?(velocityY>0?"JUMP":"FALL"):(keys.left||keys.right?"WALK":"STILL");SET_ANIMATION(animation,true,true)}
+function SET_NUMBER(n){if(!unlockedNumbers.includes(n))return;currentNumber=n;numberImage.src=`../../Media/Images/${n}.png`;numberImage.alt=`Number ${n}`;numberImage.hidden=false;const iconScale={"-1":0.28,"1":0.2933,"2":0.32,"3":0.26,"4":0.26,"5":0.30,"16":0.30,"44":0.30};const iconOffset=n===1||n===2?20:0;numberImage.style.transform=`translate(${iconOffset}px,3px) scale(${iconScale[n]})`;projectile=null;PROJECTILE.hidden=true;dashTime=0;actionLocked=false;attacking=false;const animation=!onGround?(velocityY>0?"JUMP":"FALL"):(keys.left||keys.right?"WALK":"STILL");SET_ANIMATION(animation,true,true)}
 
 function LOAD_UNLOCKED_NUMBERS(){const out=[1];try{const saved=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");for(const [number,status] of Object.entries(saved.characters||{})){if(status==="UNLOCKED")out.push(Number(number))}if(localStorage.getItem("chapter1Completed")==="true")out.push(2)}catch(e){console.warn("Saved character progress could not be read from browser storage.",e)}return getSelectedPlayableNumbers(out)}
 
@@ -247,9 +249,10 @@ playerX=lastSafeX;playerY=lastSafeY;velocityY=0;velocityX=0;onGround=true;dashTi
 }
 
 function START_ATTACK(){
-  if(currentNumber===-1){
+  if(currentNumber===-1||currentNumber===44){
     if(dashTime>0)return;
     dashDirection=facing;dashTime=0.24;invulnerable=Math.max(invulnerable,0.5);
+     if(currentNumber===44)velocityY=0;
     actionLocked=false;attacking=true;SET_ANIMATION("DASH",true,true);return
   }
   if(currentNumber===5){
@@ -262,6 +265,9 @@ function START_ATTACK(){
   }else if(currentNumber===3){
     projectile={kind:"arrow",x:playerX,y:playerY,verticalOffset:(177*PLAYER_SCALE-PROJECTILE.naturalHeight*1.2)/2,direction:facing,elapsed:0};
     PROJECTILE.src=playerSpritePath(3,"Arrow");PROJECTILE.hidden=false
+  }else if(currentNumber===16){
+    projectile={kind:"bomb",x:playerX,y:playerY,verticalOffset:20,direction:facing,elapsed:0,phase:"flying",phaseTime:0};
+    PROJECTILE.src=playerSpritePath(16,"Bomb");PROJECTILE.hidden=false
   }
   attacking=true;actionLocked=true;SET_ANIMATION("SWING",true,true)
 }
@@ -272,6 +278,14 @@ function UPDATE_PROJECTILE(dt){
   if(projectile.kind==="arrow"){
     projectile.x+=projectile.direction*620*dt;
     if(projectile.elapsed>=1.3||projectile.x<0||projectile.x>WORLD_WIDTH){projectile=null;PROJECTILE.hidden=true;return}
+  }else if(projectile.kind==="bomb"){
+    if(projectile.phase==="flying"){
+      projectile.x+=projectile.direction*getPlayerBehavior(16).projectileSpeed*dt;
+      if(projectile.elapsed>=getPlayerBehavior(16).bombFuse){projectile.phase="exploding";projectile.phaseTime=0;PROJECTILE.src=playerSpritePath(16,"Explode")}
+    }else{
+      projectile.phaseTime+=dt;
+      if(projectile.phaseTime>=getPlayerBehavior(16).explosionDuration){projectile=null;PROJECTILE.hidden=true;return}
+    }
   }else if(projectile.phase==="outbound"){
     projectile.x=Math.max(50,Math.min(WORLD_WIDTH-50,projectile.x+projectile.direction*180*dt));
     if(projectile.elapsed>=3){projectile.phase="paused";projectile.pauseTime=0}
@@ -295,12 +309,12 @@ function UPDATE_PLAYER(dt){
 
  if(won)return;
  if(dashTime>0){dashTime=Math.max(0,dashTime-dt);velocityX=dashDirection*1050;if(dashTime===0){attacking=false;SET_ANIMATION(onGround?(keys.left||keys.right?"WALK":"STILL"):(velocityY>0?"JUMP":"FALL"),true,true)}}
- else velocityX=actionLocked?0:((keys.right?PLAYER_SPEED:0)-(keys.left?PLAYER_SPEED:0));
+ else velocityX=actionLocked||(!onGround&&!canPlayerControlInAir(currentNumber))?0:((keys.right?PLAYER_SPEED:0)-(keys.left?PLAYER_SPEED:0));
  if(dashTime===0&&velocityX!==0)facing=velocityX<0?-1:1;
 
  const prevY=playerY,prevX=playerX;playerX=Math.max(PLAYER_W/2,Math.min(WORLD_WIDTH-50,playerX+velocityX*dt));
 
- if(!onGround){velocityY-=GRAVITY*dt;playerY+=velocityY*dt}
+ if(!onGround&&shouldApplyPlayerGravity(currentNumber,attacking)){velocityY-=GRAVITY*dt;playerY+=velocityY*dt}
 
  const feet={x:playerX-PLAYER_W/2+7,y:playerY,w:PLAYER_W-14,h:4};let landed=null;
 
@@ -336,7 +350,8 @@ function UPDATE_PLAYER(dt){
 
  const facingFlip=velocityX<0?1:velocityX>0?-1:(facing<0?1:-1);
  const animationFlip=currentNumber===4&&(currentAnimation==="FALL"||currentAnimation==="SWING")?fallFlip:1;
- PLAYER.style.transform=`translateX(-50%) scale(${PLAYER_SCALE}) scaleX(${facingFlip*animationFlip})`;
+ const travelRotation=currentNumber===44&&!onGround?(velocityY>0?-90:velocityY<0?90:0):0;
+ PLAYER.style.transform=`translateX(-50%) scale(${PLAYER_SCALE}) rotate(${travelRotation}deg) scaleX(${facingFlip*animationFlip})`;
 
   UPDATE_PROJECTILE(dt);
 
@@ -353,7 +368,7 @@ document.addEventListener("keydown",e=>{const k=e.key.toLowerCase();if(["arrowle
 
  if(k===KEY_BINDINGS.left||k==="arrowleft")keys.left=true;if(k===KEY_BINDINGS.right||k==="arrowright")keys.right=true;
 
- if((k===KEY_BINDINGS.jump||k==="arrowup")&&currentNumber!==-1&&!e.repeat&&onGround){velocityY=currentNumber===4?NUMBER_4_JUMP_POWER:JUMP_POWER;onGround=false;SET_ANIMATION("JUMP");}
+ if((k===KEY_BINDINGS.jump||k==="arrowup")&&canPlayerJump(currentNumber)&&!e.repeat&&onGround){velocityY=currentNumber===4?NUMBER_4_JUMP_POWER:getPlayerJumpPower(currentNumber);onGround=false;SET_ANIMATION("JUMP");}
 
  if(k===KEY_BINDINGS.attack&&!e.repeat)START_ATTACK();
 
