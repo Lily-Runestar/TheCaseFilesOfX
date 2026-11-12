@@ -35,7 +35,7 @@ const PLAYER_SETTINGS_KEY = "sixtySevenPlayerSettings";
 const PLAYER_SKINS = Object.freeze({
   "-1": Object.freeze(["Standard", "LNY2024"]),
   "1": Object.freeze(["Standard", "Christmas"]),
-  "2": Object.freeze(["Standard"]),
+  "2": Object.freeze(["Standard", "Entity"]),
   "3": Object.freeze(["Standard", "LNY2024"]),
   "4": Object.freeze(["Standard", "Halloween"]),
   "5": Object.freeze(["Standard"]),
@@ -101,6 +101,58 @@ function playerSpritePath(number, frameName) {
   return new URL(`../Media/Player/${number}/${skin}/${filename}`, PLAYER_CONTROLS_SCRIPT_URL).href;
 }
 
+const PLAYER_SPRITE_CENTROIDS = new Map();
+
+function applyPlayerSpritePivot(image, number, left, bottom, scale) {
+  if (Number(number) !== 44) {
+    image.style.transformOrigin = "50% 100%";
+    image.style.left = `${left}px`;
+    image.style.bottom = `${bottom}px`;
+    return;
+  }
+
+  const source = image.src;
+  let centroid = PLAYER_SPRITE_CENTROIDS.get(source);
+  if (!centroid && image.complete && image.naturalWidth && image.naturalHeight) {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      context.drawImage(image, 0, 0);
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      let totalAlpha = 0;
+      let weightedX = 0;
+      let weightedY = 0;
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          const alpha = pixels[(y * canvas.width + x) * 4 + 3];
+          totalAlpha += alpha;
+          weightedX += x * alpha;
+          weightedY += y * alpha;
+        }
+      }
+      centroid = totalAlpha
+        ? { x: weightedX / totalAlpha, y: weightedY / totalAlpha, width: canvas.width, height: canvas.height }
+        : { x: canvas.width / 2, y: canvas.height / 2, width: canvas.width, height: canvas.height };
+    } catch (error) {
+      centroid = { x: image.naturalWidth / 2, y: image.naturalHeight / 2, width: image.naturalWidth, height: image.naturalHeight };
+    }
+    PLAYER_SPRITE_CENTROIDS.set(source, centroid);
+  }
+
+  if (!centroid) {
+    image.style.transformOrigin = "50% 100%";
+    image.style.left = `${left}px`;
+    image.style.bottom = `${bottom}px`;
+    return;
+  }
+
+  image.style.transformOrigin = `${centroid.x}px ${centroid.y}px`;
+  image.style.left = `${left + (scale - 1) * (centroid.x - centroid.width / 2)}px`;
+  image.style.bottom = `${bottom + (scale - 1) * (centroid.height - centroid.y)}px`;
+}
+
 const PLAYER_PROFILE = Object.freeze({
   width: 44, height: 78, scale: 0.56, speed: 300,
   jumpPower: 798.4, number4JumpPower: 1050, gravity: 1900,
@@ -160,7 +212,7 @@ const PLAYER_CHARACTER_BEHAVIOR = Object.freeze({
   "4": Object.freeze({ attackLocked: true, mirrorInAir: true, mirrorOnAttack: true, jumpPower: 1050, fallFrameRate: 70 }),
   "5": Object.freeze({ attackLocked: true, projectileSpeed: 300, recallSpeed: 480, recallDelay: 0.45, travelOnRecall: true }),
   "16": Object.freeze({ attackLocked: true, noJump: true, projectileSpeed: 520, bombFuse: 0.7, explosionDuration: 0.35 }),
-  "44": Object.freeze({ attackLocked: true, jumpPower: 1050, airControl: false, gravityWhileAttacking: false, dashSpeed: 900, dashDuration: 0.24, invulnerable: 0.5 })
+  "44": Object.freeze({ attackLocked: true, jumpPower: 1050, airControl: false, gravityWhileAttacking: false, dashSpeed: 900, dashDuration: 0.24 })
 });
 
 function getPlayerBehavior(number) {

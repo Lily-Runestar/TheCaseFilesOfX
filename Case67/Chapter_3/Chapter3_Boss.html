@@ -227,6 +227,7 @@
     let playerY = FLOOR_Y;
     let playerVelocityY = 0;
     let playerGrounded = true;
+    let playerJumpsUsed = 0;
     let playerHealth = Number.isInteger(carriedHealth) && carriedHealth > 0
       ? Math.min(carriedHealth, PLAYER_MAX_HEALTH)
       : PLAYER_MAX_HEALTH;
@@ -510,10 +511,13 @@
         projectileElement.hidden = false;
       } else if (currentNumber === -1 || currentNumber === 44) {
         playerDashTime = 0.24;
-        playerDashDirection = playerFacing;
+        playerDashDirection = currentNumber === 44 && keys.left !== keys.right ? (keys.left ? -1 : 1) : playerFacing;
         playerDashHit = false;
-        playerInvulnerable = Math.max(playerInvulnerable, 0.5);
-        if (currentNumber === 44) playerVelocityY = 0;
+        if (currentNumber === -1) playerInvulnerable = Math.max(playerInvulnerable, 0.5);
+        if (currentNumber === 44) {
+          playerFacing = playerDashDirection;
+          playerVelocityY = 0;
+        }
       } else if (currentNumber === 16) {
         playerProjectile = { kind: "bomb", x: playerX + playerFacing * 36, y: playerY + 40, direction: playerFacing, elapsed: 0, phase: "flying", phaseTime: 0, hit: false };
         projectileElement.src = playerSpritePath(16, "Bomb");
@@ -648,16 +652,15 @@
     }
 
     function draw() {
-      playerElement.style.left = `${playerX}px`;
-      playerElement.style.bottom = `${78 + playerY}px`;
-      const facingFlip = playerFacing === 1 ? -1 : 1;
+      applyPlayerSpritePivot(playerElement, currentNumber, playerX, 78 + playerY, PLAYER_SCALE);
+      const facingFlip = currentNumber === 44 && playerDashTime > 0 && playerDashDirection > 0 ? 1 : playerFacing === 1 ? -1 : 1;
       const animationFlip =
         currentNumber === 4 &&
         (playerAnimation === "FALL" ||
           (playerAnimation === "SWING" && playerAttackKind !== "jump"))
           ? playerFlip
           : 1;
-      const travelRotation = currentNumber === 44 && !playerGrounded ? (playerVelocityY > 0 ? -90 : playerVelocityY < 0 ? 90 : 0) : 0;
+      const travelRotation = currentNumber === 44 ? (playerDashTime > 0 && playerDashDirection > 0 ? 180 : !playerGrounded ? (playerVelocityY > 0 ? -90 * playerFacing : playerVelocityY < 0 ? 90 * playerFacing : 0) : 0) : 0;
       playerElement.style.transform =
         `translateX(-50%) scale(${PLAYER_SCALE}) rotate(${travelRotation}deg) scaleX(${facingFlip * animationFlip})`;
       const enemySpriteFlip = enemyFacing === 1 ? -1 : 1;
@@ -715,6 +718,7 @@
       playerY = playerPhysics.y;
       playerVelocityY = playerPhysics.velocityY;
       playerGrounded = playerPhysics.grounded;
+      if (playerGrounded) playerJumpsUsed = 0;
 
       updatePlayerProjectile(dt);
 
@@ -799,9 +803,10 @@
         (key === keyBindings.jump || key === "arrowup") &&
         canPlayerJump(currentNumber) &&
         !event.repeat &&
-        playerGrounded
+        (playerGrounded || (currentNumber === 44 && playerJumpsUsed < 2))
       ) {
         playerVelocityY = currentNumber === 4 ? NUMBER_4_JUMP_POWER : getPlayerJumpPower(currentNumber);
+        if (currentNumber === 44) playerJumpsUsed++;
         playerGrounded = false;
         if (currentNumber === 4) {
           attackPlayer("jump");

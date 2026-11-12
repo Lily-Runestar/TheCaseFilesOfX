@@ -85,7 +85,7 @@ let fallFlip=1;
 
 const PLAYER_SPEED=PLAYER_PROFILE.speed,JUMP_POWER=PLAYER_PROFILE.jumpPower,NUMBER_4_JUMP_POWER=PLAYER_PROFILE.number4JumpPower,GRAVITY=PLAYER_PROFILE.gravity,PLAYER_W=PLAYER_PROFILE.width,PLAYER_H=PLAYER_PROFILE.height,PLAYER_SCALE=PLAYER_PROFILE.scale,GROUND_H=90;
 
-let playerX=100,playerY=0,velocityX=0,velocityY=0,onGround=true,facing=1,cameraX=0,hearts=getStartingHealth(),lastTime=performance.now(),invulnerable=0,won=false,dashTime=0,dashDirection=1,projectile=null;
+let playerX=100,playerY=0,velocityX=0,velocityY=0,onGround=true,jumpsUsed=0,facing=1,cameraX=0,hearts=getStartingHealth(),lastTime=performance.now(),invulnerable=0,won=false,dashTime=0,dashDirection=1,projectile=null;
 
 let lastSafeX=100,lastSafeY=0;
 
@@ -263,7 +263,7 @@ playerX=lastSafeX;playerY=lastSafeY;velocityY=0;velocityX=0;onGround=true;dashTi
 function START_ATTACK(){
   if(currentNumber===-1||currentNumber===44){
     if(dashTime>0)return;
-    dashDirection=facing;dashTime=0.24;invulnerable=Math.max(invulnerable,0.5);
+    dashDirection=currentNumber===44&&keys.left!==keys.right?(keys.left?-1:1):facing;dashTime=0.24;if(currentNumber===-1)invulnerable=Math.max(invulnerable,0.5);
      if(currentNumber===44)velocityY=0;
     actionLocked=false;attacking=true;SET_ANIMATION("DASH",true,true);return
   }
@@ -332,9 +332,9 @@ function UPDATE_PLAYER(dt){
 
  if(velocityY<=0){for(const p of platforms){if(prevY>=p.y-1&&playerY<=p.y&&playerX+PLAYER_W/2>p.x&&playerX-PLAYER_W/2<p.x+p.w){if(!landed||p.y>landed.y)landed=p}}}
 
- if(landed){playerY=landed.y;velocityY=0;onGround=true}
+ if(landed){playerY=landed.y;velocityY=0;onGround=true;jumpsUsed=0}
 
- else if(playerY<=0){playerY=0;velocityY=0;onGround=true}
+ else if(playerY<=0){playerY=0;velocityY=0;onGround=true;jumpsUsed=0}
 
  else onGround=false;
 
@@ -358,11 +358,12 @@ function UPDATE_PLAYER(dt){
 
  SCENERY.style.transform=`translateX(${-cameraX}px)`;
 
- PLAYER.style.left=(playerX-cameraX)+"px";PLAYER.style.bottom=(GROUND_H+playerY)+"px";
+ applyPlayerSpritePivot(PLAYER,currentNumber,playerX-cameraX,GROUND_H+playerY,PLAYER_SCALE);
 
- const facingFlip=velocityX<0?1:velocityX>0?-1:(facing<0?1:-1);
+ const renderFacing=currentNumber===44&&dashTime>0?dashDirection:velocityX<0?-1:velocityX>0?1:facing;
+ const facingFlip=currentNumber===44&&dashTime>0&&dashDirection>0?1:renderFacing<0?1:-1;
  const animationFlip=currentNumber===4&&(currentAnimation==="FALL"||currentAnimation==="SWING")?fallFlip:1;
- const travelRotation=currentNumber===44&&!onGround?(velocityY>0?-90:velocityY<0?90:0):0;
+ const travelRotation=currentNumber===44?(dashTime>0&&dashDirection>0?180:!onGround?(velocityY>0?-90*renderFacing:velocityY<0?90*renderFacing:0):0):0;
  PLAYER.style.transform=`translateX(-50%) scale(${PLAYER_SCALE}) rotate(${travelRotation}deg) scaleX(${facingFlip*animationFlip})`;
 
   UPDATE_PROJECTILE(dt);
@@ -380,7 +381,7 @@ document.addEventListener("keydown",e=>{const k=e.key.toLowerCase();if(["arrowle
 
  if(k===KEY_BINDINGS.left||k==="arrowleft")keys.left=true;if(k===KEY_BINDINGS.right||k==="arrowright")keys.right=true;
 
- if((k===KEY_BINDINGS.jump||k==="arrowup")&&canPlayerJump(currentNumber)&&!e.repeat&&onGround){velocityY=currentNumber===4?NUMBER_4_JUMP_POWER:getPlayerJumpPower(currentNumber);onGround=false;SET_ANIMATION("JUMP");}
+ if((k===KEY_BINDINGS.jump||k==="arrowup")&&canPlayerJump(currentNumber)&&!e.repeat&&(onGround||(currentNumber===44&&jumpsUsed<2))){velocityY=currentNumber===4?NUMBER_4_JUMP_POWER:getPlayerJumpPower(currentNumber);if(currentNumber===44)jumpsUsed++;onGround=false;SET_ANIMATION("JUMP");}
 
  if(k===KEY_BINDINGS.attack&&!e.repeat)START_ATTACK();
 

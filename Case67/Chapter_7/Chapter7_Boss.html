@@ -63,7 +63,7 @@
 
     const ANIMATION_DELAY=140;
     let unlockedNumbers=[1],currentNumber=1;
-    let playerX=GAME.clientWidth*.15,playerY=0,playerVelocityY=0,playerGrounded=true;
+    let playerX=GAME.clientWidth*.15,playerY=0,playerVelocityY=0,playerGrounded=true,playerJumpsUsed=0;
     let playerHealth=getStartingHealth(),playerFacing=1,playerAnimation="STILL",playerFrame=0,playerAnimationTimer=0;
     let playerFlip=1;
     let playerAttackTimer=0,playerAttackHit=false,playerAttackKind="melee",playerDashTimer=0,playerDashHit=false,playerDashDirection=1;
@@ -177,8 +177,9 @@
       playerAttackTimer=.36;playerAttackHit=false;playerAttackKind=kind;setNumberFacingTarget();
       setPlayerAnimation("SWING",true);
       if(currentNumber===-1||currentNumber===44){
-        playerDashTimer=.24;playerDashDirection=playerFacing;playerDashHit=false;
-        playerInvulnerable=Math.max(playerInvulnerable,.5);
+        playerDashTimer=.24;playerDashDirection=currentNumber===44&&keys.left!==keys.right?(keys.left?-1:1):playerFacing;playerDashHit=false;
+        if(currentNumber===44)playerFacing=playerDashDirection;
+        if(currentNumber===-1)playerInvulnerable=Math.max(playerInvulnerable,.5);
         if(currentNumber===44)playerVelocityY=0;
       }
       if(currentNumber===3){
@@ -334,10 +335,11 @@
       }
     }
     function draw(){
-      playerElement.style.left=`${playerX}px`;playerElement.style.bottom=`${FLOOR_HEIGHT+playerY}px`;
+      applyPlayerSpritePivot(playerElement,currentNumber,playerX,FLOOR_HEIGHT+playerY,PLAYER_SCALE);
       const animationFlip=currentNumber===4&&(playerAnimation==="FALL"||(playerAnimation==="SWING"&&playerAttackKind!=="jump"))?playerFlip:1;
-      const travelRotation=currentNumber===44&&!playerGrounded?(playerVelocityY>0?-90:playerVelocityY<0?90:0):0;
-      playerElement.style.transform=`translateX(-50%) scale(${PLAYER_SCALE}) rotate(${travelRotation}deg) scaleX(${(playerFacing===1?-1:1)*animationFlip})`;
+      const facingFlip=currentNumber===44&&playerDashTimer>0&&playerDashDirection>0?1:playerFacing===1?-1:1;
+      const travelRotation=currentNumber===44?(playerDashTimer>0&&playerDashDirection>0?180:!playerGrounded?(playerVelocityY>0?-90*playerFacing:playerVelocityY<0?90*playerFacing:0):0):0;
+      playerElement.style.transform=`translateX(-50%) scale(${PLAYER_SCALE}) rotate(${travelRotation}deg) scaleX(${facingFlip*animationFlip})`;
       boss6Element.classList.toggle("casting",boss6Health>0&&spellChannelTimer>0);
       boss6Element.style.left=`${boss6X}px`;boss6Element.style.transform=`translateX(-50%) scale(${BOSS_SCALE}) scaleX(${boss6Facing===1?-1:1})`;
       boss7Element.style.left=`${boss7X}px`;boss7Element.style.transform=`translateX(-50%) scale(${BOSS_SCALE}) scaleX(${boss7Facing===1?-1:1})`;
@@ -364,7 +366,7 @@
         }
       }
       if(!playerGrounded&&shouldApplyPlayerGravity(currentNumber,playerAttackTimer>0)){playerVelocityY-=GRAVITY*dt;playerY+=playerVelocityY*dt}
-      if(playerY<=FLOOR_Y){playerY=FLOOR_Y;playerVelocityY=0;playerGrounded=true}
+      if(playerY<=FLOOR_Y){playerY=FLOOR_Y;playerVelocityY=0;playerGrounded=true;playerJumpsUsed=0}
       else playerGrounded=false;
       playerX=Math.max(PLAYER_WIDTH/2,Math.min(GAME.clientWidth-PLAYER_WIDTH/2,playerX));
       if(playerAttackTimer<=0)setPlayerAnimation(!playerGrounded?(playerVelocityY>0?"JUMP":"FALL"):movement?"WALK":"STILL");
@@ -395,8 +397,8 @@
       if(finished)return;
       if(key===keyBindings.left||key==="arrowleft")keys.left=true;
       if(key===keyBindings.right||key==="arrowright")keys.right=true;
-      if((key===keyBindings.jump||key==="arrowup")&&!event.repeat&&playerGrounded&&canPlayerJump(currentNumber)){
-        playerVelocityY=currentNumber===4?NUMBER_4_JUMP_POWER:getPlayerJumpPower(currentNumber);playerGrounded=false;
+      if((key===keyBindings.jump||key==="arrowup")&&!event.repeat&&(playerGrounded||(currentNumber===44&&playerJumpsUsed<2))&&canPlayerJump(currentNumber)){
+        playerVelocityY=currentNumber===4?NUMBER_4_JUMP_POWER:getPlayerJumpPower(currentNumber);if(currentNumber===44)playerJumpsUsed++;playerGrounded=false;
         if(currentNumber===4)attackPlayer("jump");else setPlayerAnimation("JUMP",true);
       }
       if(key===keyBindings.attack&&!event.repeat)attackPlayer();
