@@ -60,9 +60,10 @@ let projectile=null;
     }
     function draw(){player.src=christmasPlayerSprite(number,playerFrame());player.style.left=`${playerX}px`;player.style.bottom=`${78+playerY}px`;const characterMirror=getPlayerHorizontalFlip(number,facing,playerGrounded,playerAttacking,performance.now());const travelRotation=number===44&&!playerGrounded?(playerVelocityY>0?-90:playerVelocityY<0?90:0):0;player.style.transform=`translateX(-50%) scale(.56) rotate(${travelRotation}deg) scaleX(${-facing*characterMirror})`; boss.style.left=`${bossX}px`;boss.style.transform=`translateX(-50%) scaleX(${bossX>game.clientWidth/2?-1:1})`}
     function flashBoss(){let flashes=0;const pulse=()=>{if(flashes>=6){boss.style.opacity="1";return}boss.style.opacity=flashes++%2?"1":"0.25";window.setTimeout(pulse,90)};pulse()}
-    function hurtPlayer(){if(finished||damageCooldown>0)return;damageCooldown=.7;playerHealth--;drawHealth();if(playerHealth<=0){finished=true;message.textContent="DEFEATED"}}
+    function finishCase(result,text){finished=true;message.textContent=text;window.setTimeout(()=>window.location.href=`Exit.html?result=${result}`,1000)}
+    function hurtPlayer(){if(finished||damageCooldown>0)return;damageCooldown=.7;playerHealth--;drawHealth();if(playerHealth<=0)finishCase("defeat","DEFEATED")}
     function unlockCharacter16(){try{const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");progress.characters=progress.characters||{};progress.characters["16"]="UNLOCKED";progress.cases=progress.cases||{};progress.cases.CaseChristmasNightmare="COMPLETED";localStorage.setItem("sixtySevenProgress",JSON.stringify(progress));localStorage.setItem("caseChristmasNightmareCompleted","true")}catch(error){console.error("Could not unlock Character 16",error)}}
-    function victory(){finished=true;unlockCharacter16();message.textContent="VICTORY — 16 UNLOCKED"}
+    function victory(){if(finished)return;unlockCharacter16();finishCase("victory","VICTORY — 16 UNLOCKED")}
     let attackObjects=[];
     function clearAttackObjects(){for(const object of attackObjects)object.remove();attackObjects=[];meteor.style.display="none"}
     function createAttackImage(file){const image=document.createElement("img");image.className="attack-image";image.src=asset+file;game.appendChild(image);attackObjects.push(image);return image}

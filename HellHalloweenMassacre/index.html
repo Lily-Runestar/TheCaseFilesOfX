@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HELL HALLOWEEN MASSACRE</title>
+  <style>
+    @font-face{font-family:Heading;src:url("../Media/Fonts/Heading.ttf") format("truetype")}
+    *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#090909;color:#eee;font-family:Heading,sans-serif}
+    body{display:grid;place-items:center}
+    #game{position:relative;width:min(1280px,100vw);height:min(720px,100vh);overflow:hidden;border:2px solid #000;background:#181818;margin:auto;isolation:isolate}
+    #arena-background{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;z-index:0}
+    #ground{position:absolute;left:0;right:0;bottom:0;height:78px;border-top:3px solid #a21d2b;background:#100e12 url("../Media/Images/Floor.png") repeat;background-size:64px 64px;z-index:2}
+    #player,#boss,#branch,#PLAYER-PROJECTILE{position:absolute;width:auto;height:auto;image-rendering:pixelated;user-select:none;pointer-events:none}
+    #player{z-index:4;bottom:78px;transform:translateX(-50%) scale(.56);transform-origin:center bottom}
+    #boss{z-index:1;top:0;left:50%;height:100%;width:auto;transform:translateX(-50%)}
+    #branch-warning{display:none;position:absolute;z-index:3;transform-origin:50% 0;pointer-events:none;background:rgba(255,0,0,.1);border:2px solid rgba(255,40,40,.28);box-shadow:0 0 18px rgba(255,0,0,.14)}
+    #branch{display:none;z-index:5;transform-origin:50% 0}
+    #PLAYER-PROJECTILE{display:none;z-index:6;transform-origin:center bottom}
+    #HUD{position:absolute;top:22px;left:22px;display:flex;align-items:center;gap:18px;z-index:10;pointer-events:none}
+    #NUMBER-CIRCLE{position:relative;width:82px;height:87px;display:flex;align-items:center;justify-content:center;border:0;padding:0;background:transparent;cursor:pointer;pointer-events:auto}
+    #NUMBER-CIRCLE-BACKGROUND{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;filter:invert(1)}
+    #NUMBER-IMAGE{position:absolute;z-index:1;image-rendering:pixelated;filter:invert(1)}
+    #HEALTH{display:flex;align-items:center;gap:6px}
+    .HEART{width:32px;height:32px;object-fit:contain;image-rendering:pixelated}
+    #MESSAGE{position:absolute;left:50%;top:43%;transform:translate(-50%,-50%);color:#ffb8b8;font:20px Arial,sans-serif;letter-spacing:2px;text-align:center;text-shadow:0 2px #000;z-index:12;pointer-events:none;opacity:0;transition:opacity .2s}
+  </style>
+</head>
+<body data-mode="hell">
+  <main id="game">
+    <img id="arena-background" src="Forest.png" alt="Blood-soaked haunted forest">
+    <div id="ground"></div>
+    <div id="branch-warning" aria-hidden="true"></div>
+    <img id="player" alt="Player">
+    <img id="boss" alt="The Blood Tree">
+    <img id="branch" alt="">
+    <img id="PLAYER-PROJECTILE" alt="">
+    <div id="MESSAGE" aria-live="polite"></div>
+    <div id="HUD">
+      <button id="NUMBER-CIRCLE" type="button" aria-label="Switch character">
+        <img id="NUMBER-CIRCLE-BACKGROUND" src="../Media/Images/0.png" alt="">
+        <img id="NUMBER-IMAGE" src="../Media/Images/1.png" alt="Number 1">
+      </button>
+      <div id="HEALTH" aria-label="Health"></div>
+    </div>
+  </main>
+  <script src="../player controls/player-controls.js?v=lny2024-2"></script>
+  <script src="../HalloweenCase.js"></script>
+</body>
+</html>

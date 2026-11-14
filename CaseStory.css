@@ -1,0 +1,61 @@
+@font-face {
+  font-family: Heading;
+  src: url("Media/Fonts/Heading.ttf") format("truetype");
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  background: #080808;
+  color: #fff;
+  font-family: Heading, Arial, sans-serif;
+}
+
+body {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+main {
+  width: min(100%, 900px);
+  display: grid;
+  gap: 24px;
+}
+
+h1 {
+  margin: 0;
+  color: #d7d0bc;
+  font-size: clamp(32px, 7vw, 64px);
+  text-align: center;
+  text-shadow: 3px 3px #4c1717;
+}
+
+#story-text {
+  margin: 0;
+  font: 20px/1.8 Arial, sans-serif;
+  white-space: pre-line;
+}
+
+#story-action {
+  justify-self: center;
+  padding: 14px 28px;
+  border: 1px solid #978e7c;
+  color: #fff;
+  background: #211d1a;
+  font: 20px Arial, sans-serif;
+  text-decoration: none;
+}
+
+#story-action:hover,
+#story-action:focus-visible {
+  background: #492020;
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}

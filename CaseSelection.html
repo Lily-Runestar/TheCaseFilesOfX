@@ -66,20 +66,24 @@
 
     function isCaseCompleted(folder) {
       if (folder === "Case67") return isCase67Complete();
-      if (folder === "CaseChristmasNightmare") {
+      if (folder === "CaseChristmasNightmare" || folder === "CaseHalloweenMasacre") {
+        const progressKey = folder;
+        const legacyKey = folder === "CaseChristmasNightmare"
+          ? "caseChristmasNightmareCompleted"
+          : "caseHalloweenMasacreCompleted";
         try {
           const progress = JSON.parse(localStorage.getItem("sixtySevenProgress") || "{}");
-          return progress.cases && progress.cases.CaseChristmasNightmare === "COMPLETED"
-            || localStorage.getItem("caseChristmasNightmareCompleted") === "true";
+          return progress.cases && progress.cases[progressKey] === "COMPLETED"
+            || localStorage.getItem(legacyKey) === "true";
         } catch (error) {
-          return localStorage.getItem("caseChristmasNightmareCompleted") === "true";
+          return localStorage.getItem(legacyKey) === "true";
         }
       }
       return false;
     }
 
     async function discoverCases() {
-      const cases = ["Case67", "CaseChristmasNightmare"];
+      const cases = ["Case67", "CaseChristmasNightmare", "CaseHalloweenMasacre"];
       try {
         const response = await fetch("./");
         const html = await response.text();
@@ -101,10 +105,18 @@
         const button = document.createElement("button");
         button.className = "case";
         button.textContent = folder.replace(/^Case/, "CASE ");
-        button.dataset.mediaKey = folder === "Case67" ? "case67" : "casechristmasnightmare";
+        button.dataset.mediaKey = {
+          Case67: "case67",
+          CaseChristmasNightmare: "casechristmasnightmare",
+          CaseHalloweenMasacre: "casehalloweenmassacre"
+        }[folder] || "casechristmasnightmare";
         if (hellMode) {
           if (hellAvailable) {
-            button.dataset.mediaKey = folder === "Case67" ? "hell67" : "hellchristmasnightmare";
+            button.dataset.mediaKey = {
+              Case67: "hell67",
+              CaseChristmasNightmare: "hellchristmasnightmare",
+              CaseHalloweenMasacre: "hellholloweenmassacre"
+            }[folder] || "hellchristmasnightmare";
           }
         }
         button.addEventListener("click", () => {
@@ -112,9 +124,15 @@
           settings.hell = hellMode;
           savePlayerSettings(settings);
           const startingHealth = hellMode ? 1 : { easy: 5, medium: 4, hard: 3 }[difficulty];
-          const destination = hellMode && hellAvailable ? folder.replace(/^Case/, "Hell") : folder;
+          const destinations = {
+            Case67: "Hell67",
+            CaseChristmasNightmare: "HellChristmasNightmare",
+            CaseHalloweenMasacre: "HellHalloweenMassacre"
+          };
+          const destination = hellMode && hellAvailable ? destinations[folder] : folder;
           if (!hellAvailable && hellMode) return;
-          window.location.href = `${destination}/index.html${hellMode ? "" : `?hp=${startingHealth}`}`;
+          const page = folder === "Case67" ? "index.html" : "Intro.html";
+          window.location.href = `${destination}/${page}${hellMode ? "" : `?hp=${startingHealth}`}`;
         });
         casesElement.appendChild(button);
       });
@@ -129,7 +147,7 @@
     });
 
     const hellButton = document.getElementById("hell-mode");
-    const completedCases = ["Case67", "CaseChristmasNightmare"].filter(isCaseCompleted);
+    const completedCases = ["Case67", "CaseChristmasNightmare", "CaseHalloweenMasacre"].filter(isCaseCompleted);
     hellButton.disabled = completedCases.length === 0;
     hellButton.title = completedCases.length ? "Enable Hell mode" : "Complete a case to unlock Hell mode";
     if (!completedCases.length) hellMode = false;
