@@ -15,7 +15,7 @@
     #TREE.hit{animation:tree-damage-flash .42s steps(1,end) 1}
     @keyframes tree-damage-flash{0%,100%{opacity:1}25%,75%{opacity:.25}}
     #GROUND{position:absolute;z-index:2;left:0;right:0;bottom:0;height:90px;border-top:3px solid #57465d;background:#100e12 url("../Media/Images/Floor.png") repeat;background-size:64px 64px}
-    .branch{position:absolute;z-index:3;top:-96px;height:320px;width:auto;transform:translateX(-50%) scaleY(-1);transform-origin:50% 50%;image-rendering:pixelated;pointer-events:none}
+    .branch{display:none;position:absolute;z-index:3;top:0;height:100%;width:auto;transform:translateX(-50%) scaleY(-1);transform-origin:50% 50%;image-rendering:pixelated;pointer-events:none}
     .branch.active{z-index:5}
     #BRANCH-WARNING{display:none;position:absolute;z-index:4;width:112px;height:140px;border:2px solid rgba(255,35,35,.28);background:rgba(255,0,0,.09);box-shadow:0 0 16px rgba(255,0,0,.12);transform:translateX(-50%);pointer-events:none}
     #PLAYER{position:absolute;z-index:6;left:0;bottom:90px;width:auto;height:auto;image-rendering:pixelated;transform-origin:center bottom;user-select:none;pointer-events:none}
@@ -55,9 +55,10 @@
     const WARNING=document.getElementById("BRANCH-WARNING"),PROJECTILE_IMAGE=document.getElementById("PLAYER-PROJECTILE");
     const HEALTH=document.getElementById("HEALTH"),NUMBER_IMAGE=document.getElementById("NUMBER-IMAGE"),MESSAGE=document.getElementById("MESSAGE");
     const KEY_BINDINGS=loadPlayerBindings(),AVAILABLE_NUMBERS=new Set([-1,1,2,3,4,5,16,44]);
-    const GROUND_HEIGHT=90,PLAYER_SCALE=PLAYER_PROFILE.scale,BRANCH_HEIGHT=Math.min(320,GAME.clientHeight*.48);
+    const GROUND_HEIGHT=90,PLAYER_SCALE=PLAYER_PROFILE.scale,BRANCH_HEIGHT=GAME.clientHeight-GROUND_HEIGHT;
     const BRANCH_WIDTH=BRANCH_HEIGHT*177/1018+18;
     const BRANCH_TRAVEL_TIME=.85,BRANCH_HOVER_TIME=.7,BRANCH_PLUNGE_TIME=.38,BRANCH_RETURN_TIME=.55;
+    const BRANCH_GROUNDED_TIME=10,BRANCH_HIDDEN_TOP=-BRANCH_HEIGHT-12;
     const CASE_KEY="CaseHalloweenMasacre";
     const keys={left:false,right:false};
     let playableNumbers=[],currentNumber=1,playerX=130,playerY=0,velocityY=0,onGround=true,facing=1;
@@ -175,7 +176,7 @@
     }
 
     function damageBranch(amount){
-      if(activeBranchIndex<0||!["FLOAT","HOVER","PLUNGE"].includes(phase)||branchHp<=0)return;
+      if(activeBranchIndex<0||!["FLOAT","HOVER","PLUNGE","GROUNDED"].includes(phase)||branchHp<=0)return;
       branchHp=Math.max(0,branchHp-amount);
       const branch=BRANCHES[activeBranchIndex];
       branch.style.opacity=".35";
@@ -217,7 +218,8 @@
       branch.classList.add("active");
       branch.style.height=`${BRANCH_HEIGHT}px`;
       branch.style.opacity="1";
-      placeBranch(branch,homeX(activeBranchIndex),-BRANCH_HEIGHT+22);
+      branch.style.display="block";
+      placeBranch(branch,homeX(activeBranchIndex),BRANCH_HIDDEN_TOP);
       WARNING.style.display="none";
       phase="FLOAT";
       phaseElapsed=0;
@@ -241,7 +243,8 @@
         phaseElapsed+=dt;
         const progress=Math.min(1,phaseElapsed/BRANCH_TRAVEL_TIME);
         const x=startX+(targetX-startX)*progress;
-        const top=(-BRANCH_HEIGHT+22)+(68+BRANCH_HEIGHT-22)*progress;
+        const hoverTop=-BRANCH_HEIGHT*.4;
+        const top=BRANCH_HIDDEN_TOP+(hoverTop-BRANCH_HIDDEN_TOP)*progress;
         placeBranch(branch,x,top);
         if(progress>=1){phase="HOVER";phaseTimer=BRANCH_HOVER_TIME}
       }else if(phase==="HOVER"){
@@ -250,22 +253,27 @@
       }else if(phase==="PLUNGE"){
         phaseElapsed+=dt;
         const progress=Math.min(1,phaseElapsed/BRANCH_PLUNGE_TIME);
-        const hoverTop=68;
+        const hoverTop=-BRANCH_HEIGHT*.4;
         const landingTop=GAME.clientHeight-GROUND_HEIGHT-BRANCH_HEIGHT;
         const top=hoverTop+(landingTop-hoverTop)*progress;
         placeBranch(branch,targetX,top);
         if(!branchHit&&branchOverlapsPlayer()){branchHit=true;hurtPlayer()}
-        if(progress>=1){phase="RETURN";phaseElapsed=0}
+        if(progress>=1){phase="GROUNDED";phaseTimer=BRANCH_GROUNDED_TIME}
+      }else if(phase==="GROUNDED"){
+        phaseTimer-=dt;
+        if(!branchHit&&branchOverlapsPlayer()){branchHit=true;hurtPlayer()}
+        if(phaseTimer<=0){phase="RETURN";phaseElapsed=0}
       }else if(phase==="RETURN"){
         phaseElapsed+=dt;
         const progress=Math.min(1,phaseElapsed/BRANCH_RETURN_TIME);
         const landingTop=GAME.clientHeight-GROUND_HEIGHT-BRANCH_HEIGHT;
         const x=targetX+(startX-targetX)*progress;
-        const top=landingTop+(-BRANCH_HEIGHT+22-landingTop)*progress;
+        const top=landingTop+(BRANCH_HIDDEN_TOP-landingTop)*progress;
         placeBranch(branch,x,top);
         if(progress>=1){
           branch.classList.remove("active");
-          placeBranch(branch,startX,-96);
+          branch.style.display="none";
+          placeBranch(branch,startX,BRANCH_HIDDEN_TOP);
           branch.style.height=`${BRANCH_HEIGHT}px`;
           activeBranchIndex=-1;
           TREE.src="../Media/Enemy/BloodTree/Tree.png";
@@ -322,7 +330,7 @@
       PROJECTILE_IMAGE.style.bottom=`${projectile.y}px`;
       PROJECTILE_IMAGE.style.transform=`translateX(-50%) scale(.75) scaleX(${projectile.direction})`;
       if(currentNumber===16)PROJECTILE_IMAGE.src=playerSpritePath(16,projectile.phase==="exploding"?"Explode":"Bomb");
-      if(activeBranchIndex>=0&&["FLOAT","HOVER","PLUNGE"].includes(phase)){
+      if(activeBranchIndex>=0&&["FLOAT","HOVER","PLUNGE","GROUNDED"].includes(phase)){
         const point={x:projectile.x,y:GAME.clientHeight-projectile.y};
         if(pointHitsBranch(point,42)&&(projectile.kind!=="bomb"||projectile.phase==="exploding")){
           const action=projectile.kind==="bomb"?"bomb":projectile.kind==="blade"?(projectile.phase==="returning"?"returning":"outbound"):"arrow";
@@ -387,6 +395,7 @@
     BRANCHES.forEach((branch,index)=>{
       branch.style.height=`${BRANCH_HEIGHT}px`;
       branch.style.left=`${homeX(index)}px`;
+      branch.style.top=`${BRANCH_HIDDEN_TOP}px`;
     });
     PLAYER.style.left=`${playerX}px`;
     drawPlayer();
