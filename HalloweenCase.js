@@ -107,7 +107,7 @@
   }
 
   function playerFrame() {
-    const alternate = Math.floor(performance.now() / 140) % 2;
+    const alternate = Math.floor(performance.now() / 140);
     const state = !playerGrounded
       ? playerVelocityY > 0 ? "JUMP" : "FALL"
       : keys.left || keys.right ? "WALK" : "STILL";
@@ -180,8 +180,8 @@
   function finishCase(result, saveFailed = false) {
     if (finished) return;
     finished = true;
-    message.textContent = result === "victory" ? "VICTORY" : "THE FOREST CLAIMS YOU";
-    message.style.opacity = "1";
+    message.textContent = "";
+    message.style.opacity = "0";
     window.setTimeout(() => {
       const query = new URLSearchParams({ result });
       if (saveFailed) query.set("save", "failed");
@@ -260,7 +260,7 @@
     branch.style.left = `${start.x - scaledWidth / 2}px`;
     branch.style.top = `${start.y}px`;
     branch.style.height = `${length}px`;
-    branch.style.transform = `rotate(${Math.atan2(dx, dy) * 180 / Math.PI}deg)`;
+    branch.style.transform = `rotate(${Math.atan2(-dx, dy) * 180 / Math.PI}deg)`;
     branch.style.display = "block";
   }
 
@@ -274,7 +274,7 @@
     branchWarning.style.top = `${start.y}px`;
     branchWarning.style.width = `${width}px`;
     branchWarning.style.height = `${length}px`;
-    branchWarning.style.transform = `rotate(${Math.atan2(dx, dy) * 180 / Math.PI}deg)`;
+    branchWarning.style.transform = `rotate(${Math.atan2(-dx, dy) * 180 / Math.PI}deg)`;
     branchWarning.style.display = "block";
   }
 

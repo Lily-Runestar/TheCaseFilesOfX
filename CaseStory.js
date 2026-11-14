@@ -9,26 +9,18 @@
   const stories = {
     christmas: {
       normal: {
-        intro: "12 days after Christmas, a darkness setled over the forest again. Heading inside, a tall figure stands, waiting...  -X",
-        victory: "The case is complete. I can finally leave the forest.  -X",
-        defeat: "By some miracle, life courses through my veins. But the Christmas Nightmare remains, waiting...  -X"
+        intro: "12 days after Christmas, a darkness setled over the forest again. Heading inside, a tall figure stands, waiting...  -X"
       },
       hell: {
-        intro: "The forest is darker than before, and hiding at the center, a beast of unknown origin hides in the dark, smiling, looking for a kill...  -X",
-        victory: "The case is complete. I can finally leave the forest.  -X",
-        defeat: "The entity left me, enjoying the hunt too much to finish me off... \"Come back when you are stronger\".  -X"
+        intro: "The forest is darker than before, and hiding at the center, a beast of unknown origin hides in the dark, smiling, looking for a kill...  -X"
       }
     },
     halloween: {
       normal: {
-        intro: "Inside the forest I was told a tree was killing inocent people. So into this forest I shall go, to investigate further  -X",
-        victory: "The case is complete. I can finally leave the forest.  -X",
-        defeat: "The forest closed around me as I ran. The tree's eyes remain fixed on the path.  -X"
+        intro: "Inside the forest I was told a tree was killing inocent people. So into this forest I shall go, to investigate further  -X"
       },
       hell: {
-        intro: "The forest is soaked in blood, and the massacre has started up again. Something bloodsoaked is hiding and must be stopped.  -X",
-        victory: "The case is complete. I can finally leave the forest.  -X",
-        defeat: "The tree attempted to drag me down into the dirt, but I ran fast... But it is still there, waiting...  -X"
+        intro: "The forest is soaked in blood, and the massacre has started up again. Something bloodsoaked is hiding and must be stopped.  -X"
       }
     }
   };
@@ -44,12 +36,12 @@
   }
 
   const won = new URLSearchParams(window.location.search).get("result") === "victory";
-  title.textContent = won ? "CASE COMPLETE" : "CASE ENDED";
-  story.textContent = won ? outcome.victory : outcome.defeat;
+  title.textContent = "";
+  story.textContent = "";
   if (won && new URLSearchParams(window.location.search).get("save") === "failed") {
-    story.textContent += "\n\nYour victory could not be saved. Check browser storage and try again.";
+    story.textContent = "The case result could not be saved. Check browser storage and try again.";
   }
   action.textContent = "Return to Case Selection";
   action.href = "../CaseSelection.html";
-  document.title = `${variantName}${name} — ${won ? "Complete" : "Ended"}`;
+  document.title = `${variantName}${name} — Conclusion`;
 })();

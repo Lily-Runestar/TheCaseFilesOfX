@@ -118,7 +118,7 @@
     }
 
     function playerFrame(){
-      const alternate=Math.floor(performance.now()/140)%2;
+      const alternate=Math.floor(performance.now()/140);
       const state=!onGround?(velocityY>0?"JUMP":"FALL"):keys.left||keys.right?"WALK":"STILL";
       if(currentNumber===4&&attacking&&attackKind==="jump")return "Jump";
       return getPlayerAnimationFrame(currentNumber,state,attacking,alternate);
@@ -191,8 +191,8 @@
     function finishCase(result,saveFailed=false){
       if(finished)return;
       finished=true;
-      MESSAGE.textContent=result==="victory"?"VICTORY":"THE FOREST CLAIMS YOU";
-      MESSAGE.style.opacity="1";
+      MESSAGE.textContent="";
+      MESSAGE.style.opacity="0";
       window.setTimeout(()=>{
         const query=new URLSearchParams({result});
         if(saveFailed)query.set("save","failed");
