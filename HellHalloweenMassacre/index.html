@@ -3,38 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HELL HALLOWEEN MASSACRE</title>
+  <title>CASE HALLOWEEN MASSACRE</title>
   <style>
     @font-face{font-family:Heading;src:url("../Media/Fonts/Heading.ttf") format("truetype")}
-    *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#090909;color:#eee;font-family:Heading,sans-serif}
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#090909;color:#eee;font-family:Heading,sans-serif}
     body{display:grid;place-items:center}
-    #game{position:relative;width:min(1280px,100vw);height:min(720px,100vh);overflow:hidden;border:2px solid #000;background:#181818;margin:auto;isolation:isolate}
-    #arena-background{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;z-index:0}
-    #ground{position:absolute;left:0;right:0;bottom:0;height:78px;border-top:3px solid #a21d2b;background:#100e12 url("../Media/Images/Floor.png") repeat;background-size:64px 64px;z-index:2}
-    #player,#boss,#branch,#PLAYER-PROJECTILE{position:absolute;width:auto;height:auto;image-rendering:pixelated;user-select:none;pointer-events:none}
-    #player{z-index:4;bottom:78px;transform:translateX(-50%) scale(.56);transform-origin:center bottom}
-    #boss{z-index:1;top:0;left:50%;height:100%;width:auto;transform:translateX(-50%)}
-    #branch-warning{display:none;position:absolute;z-index:3;transform-origin:50% 0;pointer-events:none;background:rgba(255,0,0,.1);border:2px solid rgba(255,40,40,.28);box-shadow:0 0 18px rgba(255,0,0,.14)}
-    #branch{display:none;z-index:5;transform-origin:50% 0}
-    #PLAYER-PROJECTILE{display:none;z-index:6;transform-origin:center bottom}
-    #HUD{position:absolute;top:22px;left:22px;display:flex;align-items:center;gap:18px;z-index:10;pointer-events:none}
+    #GAME{position:relative;width:min(1280px,100vw);height:min(720px,100vh);overflow:hidden;border:2px solid #000;background:#181818;isolation:isolate}
+    #BACKGROUND{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;z-index:0}
+    #TREE{position:absolute;z-index:1;top:0;left:50%;height:100%;width:auto;transform:translateX(-50%);image-rendering:pixelated;pointer-events:none}
+    #GROUND{position:absolute;z-index:2;left:0;right:0;bottom:0;height:90px;border-top:3px solid #57465d;background:#100e12 url("../Media/Images/Floor.png") repeat;background-size:64px 64px}
+    .branch{display:none;position:absolute;z-index:3;top:0;height:100%;width:auto;transform:translateX(-50%) scaleY(-1);transform-origin:50% 50%;image-rendering:pixelated;pointer-events:none}
+    .branch.active{z-index:5}
+    #PLAYER{position:absolute;z-index:6;left:0;bottom:90px;width:auto;height:auto;image-rendering:pixelated;transform-origin:center bottom;user-select:none;pointer-events:none}
+    #PLAYER-PROJECTILE{position:absolute;z-index:7;width:auto;height:auto;image-rendering:pixelated;transform-origin:center bottom;pointer-events:none}
+    #HUD{position:absolute;z-index:10;top:22px;left:22px;display:flex;align-items:center;gap:18px;pointer-events:none}
     #NUMBER-CIRCLE{position:relative;width:82px;height:87px;display:flex;align-items:center;justify-content:center;border:0;padding:0;background:transparent;cursor:pointer;pointer-events:auto}
     #NUMBER-CIRCLE-BACKGROUND{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;filter:invert(1)}
     #NUMBER-IMAGE{position:absolute;z-index:1;image-rendering:pixelated;filter:invert(1)}
     #HEALTH{display:flex;align-items:center;gap:6px}
     .HEART{width:32px;height:32px;object-fit:contain;image-rendering:pixelated}
-    #MESSAGE{position:absolute;left:50%;top:43%;transform:translate(-50%,-50%);color:#ffb8b8;font:20px Arial,sans-serif;letter-spacing:2px;text-align:center;text-shadow:0 2px #000;z-index:12;pointer-events:none;opacity:0;transition:opacity .2s}
+    #MESSAGE{position:absolute;z-index:12;left:50%;top:43%;transform:translate(-50%,-50%);color:#eee;font:20px Arial,sans-serif;letter-spacing:2px;text-align:center;text-shadow:0 2px #000;pointer-events:none;opacity:0;transition:opacity .2s}
   </style>
 </head>
-<body data-mode="hell">
-  <main id="game">
-    <img id="arena-background" src="Forest.png" alt="Blood-soaked haunted forest">
-    <div id="ground"></div>
-    <div id="branch-warning" aria-hidden="true"></div>
-    <img id="player" alt="Player">
-    <img id="boss" alt="The Blood Tree">
-    <img id="branch" alt="">
-    <img id="PLAYER-PROJECTILE" alt="">
+<body>
+  <main id="GAME" aria-label="Halloween Massacre boss fight">
+    <img id="BACKGROUND" src="Forest.png" alt="Haunted Halloween forest">
+    <img id="TREE" src="../Media/Enemy/BloodTree/TreeBlood.png" alt="The Blood Tree">
+    <img id="BRANCH-LEFT" class="branch" src="../Media/Enemy/BloodTree/BranchBlood.png" alt="">
+    <img id="BRANCH-RIGHT" class="branch" src="../Media/Enemy/BloodTree/BranchBlood.png" alt="">
+    <div id="GROUND"></div>
+    <img id="PLAYER" alt="Player">
+    <img id="PLAYER-PROJECTILE" alt="" hidden>
     <div id="MESSAGE" aria-live="polite"></div>
     <div id="HUD">
       <button id="NUMBER-CIRCLE" type="button" aria-label="Switch character">
@@ -45,6 +45,421 @@
     </div>
   </main>
   <script src="../player controls/player-controls.js?v=lny2024-2"></script>
-  <script src="../HalloweenCase.js"></script>
+  <script>
+    const GAME=document.getElementById("GAME"),PLAYER=document.getElementById("PLAYER"),TREE=document.getElementById("TREE");
+    const BRANCHES=[document.getElementById("BRANCH-LEFT"),document.getElementById("BRANCH-RIGHT")];
+    const PROJECTILE_IMAGE=document.getElementById("PLAYER-PROJECTILE");
+    const HEALTH=document.getElementById("HEALTH"),NUMBER_IMAGE=document.getElementById("NUMBER-IMAGE"),MESSAGE=document.getElementById("MESSAGE");
+    const KEY_BINDINGS=loadPlayerBindings(),AVAILABLE_NUMBERS=new Set([-1,1,2,3,4,5,16,44]);
+    const GROUND_HEIGHT=90,PLAYER_SCALE=PLAYER_PROFILE.scale,BRANCH_HEIGHT=GAME.clientHeight-GROUND_HEIGHT;
+    const BRANCH_WIDTH=BRANCH_HEIGHT*177/1018+18;
+    const BRANCH_TRAVEL_TIME=.4,BRANCH_HOVER_TIME=.7,BRANCH_PLUNGE_TIME=.2,BRANCH_RETURN_TIME=.55;
+    const BRANCH_GROUNDED_TIME=10,BRANCH_HIDDEN_TOP=-BRANCH_HEIGHT-12;
+    const CASE_KEY="CaseHalloweenMasacre";
+    const keys={left:false,right:false};
+    let playableNumbers=[],currentNumber=loadPlayerSettings().cycle[0]||1,playerX=130,playerY=0,velocityY=0,onGround=true,facing=1;
+    let attacking=false,attackCooldown=0,number1Hold=0,damageCooldown=0,hearts=getStartingHealth(),projectile=null;
+    let attackElapsed=0,attackHit=false,attackKind="space",attackAnimationTime=0;
+    let playerDashTime=0,playerDashDirection=1,playerDashHit=false,playerInvulnerable=0,playerJumpsUsed=0;
+    let playerFlip=1,fourFlipState="",fourFlipTimer=0;
+    let phase="REST",phaseTimer=1.7,phaseElapsed=0,activeBranchIndex=-1,nextBranchIndex=0,targetX=0;
+    let branchHit=false,branchHp=100,finished=false,lastTime=performance.now();
+
+    function loadCharacters(){
+      const unlocked=[1];
+      try{
+        const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");
+        for(const [number,status] of Object.entries(progress.characters||{}))if(status==="UNLOCKED")unlocked.push(Number(number));
+      }catch(error){console.warn("Saved characters could not be read.",error)}
+      playableNumbers=getSelectedPlayableNumbers(unlocked).filter(number=>AVAILABLE_NUMBERS.has(number));
+      if(!playableNumbers.length)playableNumbers=[1];
+      currentNumber=playableNumbers[0];
+    }
+
+    function setNumber(number){
+      if(!playableNumbers.includes(number))return;
+      if(number!==currentNumber){
+        projectile=null;
+        PROJECTILE_IMAGE.hidden=true;
+        PROJECTILE_IMAGE.style.display="none";
+        attacking=false;
+        attackCooldown=0;
+        number1Hold=0;
+        attackElapsed=0;
+        attackHit=false;
+        attackAnimationTime=0;
+        playerDashTime=0;
+        fourFlipState="";
+        playerFlip=1;
+        fourFlipTimer=0;
+      }
+      currentNumber=number;
+      NUMBER_IMAGE.src=`../Media/Images/${number}.png`;
+      NUMBER_IMAGE.alt=`Number ${number}`;
+      const iconScale={"-1":.28,"1":.2933,"2":.32,"3":.26,"4":.26,"5":.30,"16":.30,"44":.30};
+      NUMBER_IMAGE.style.transform=`translate(${number===1||number===2?20:0}px,3px) scale(${iconScale[number]})`;
+    }
+
+    function cycleCharacter(direction){
+      const index=playableNumbers.indexOf(currentNumber);
+      setNumber(playableNumbers[(index+direction+playableNumbers.length)%playableNumbers.length]);
+    }
+
+    function drawHealth(){
+      HEALTH.replaceChildren();
+      for(let index=0;index<getStartingHealth();index++){
+        const heart=document.createElement("img");
+        heart.className="HEART";
+        heart.src="../Media/Images/Heart.png";
+        heart.alt=index<hearts?"Heart":"Empty heart";
+        heart.style.opacity=index<hearts?"1":".2";
+        HEALTH.appendChild(heart);
+      }
+    }
+
+    function playerFrame(){
+      const alternate=Math.floor(performance.now()/140);
+      const state=!onGround?(velocityY>0?"JUMP":"FALL"):keys.left||keys.right?"WALK":"STILL";
+      if(currentNumber===4&&attacking&&attackKind==="jump")return "Jump";
+      return getPlayerAnimationFrame(currentNumber,state,attacking,alternate);
+    }
+
+    function drawPlayer(){
+      const source=playerSpritePath(currentNumber,playerFrame());
+      if(!PLAYER.src.endsWith(source))PLAYER.src=source;
+      applyPlayerSpritePivot(PLAYER,currentNumber,playerX,GROUND_HEIGHT+playerY,PLAYER_SCALE);
+      const facingFlip=currentNumber===44&&playerDashTime>0&&playerDashDirection>0?1:facing===1?-1:1;
+      const animationFlip=currentNumber===4&&(fourFlipState==="FALL"||(fourFlipState==="SWING"&&attackKind!=="jump"))?playerFlip:1;
+      const travelRotation=currentNumber===44?(playerDashTime>0&&playerDashDirection>0?180:!onGround?(velocityY>0?-90*facing:velocityY<0?90*facing:0):0):0;
+      PLAYER.style.transform=`translateX(-50%) scale(${PLAYER_SCALE}) rotate(${travelRotation}deg) scaleX(${facingFlip*animationFlip})`;
+    }
+
+    function updateCharacter4Animation(dt){
+      const state=currentNumber!==4?"":attacking&&attackKind!=="jump"?"SWING":!onGround&&velocityY<=0?"FALL":"";
+      if(state!==fourFlipState){fourFlipState=state;playerFlip=1;fourFlipTimer=0}
+      if(!state)return;
+      fourFlipTimer+=dt;
+      while(fourFlipTimer>=.07){fourFlipTimer-=.07;playerFlip*=-1}
+    }
+
+    function branchAttackTargetX(){
+      return activeBranchIndex>=0?parseFloat(BRANCHES[activeBranchIndex].style.left):GAME.clientWidth/2;
+    }
+
+    function playerAttackHitsBranch(){
+      const point={x:playerX+facing*42,y:GAME.clientHeight-(GROUND_HEIGHT+playerY+PLAYER_PROFILE.height*PLAYER_SCALE/2)};
+      return activeBranchIndex>=0&&["FLOAT","HOVER","PLUNGE","GROUNDED"].includes(phase)&&pointHitsBranch(point,100);
+    }
+
+    function updatePlayerAttack(dt){
+      if(!attacking||attackHit||[-1,3,5,16,44].includes(currentNumber))return;
+      attackElapsed+=dt;
+      if(attackElapsed<(attackKind==="jump"?.1:.18))return;
+      attackHit=true;
+      if(playerAttackHitsBranch()){
+        damageBranch(getPlayerDamage(currentNumber,attackKind==="jump"?"jump":"space"));
+        if(currentNumber===1){attackCooldown=getPlayerActionDuration(1,"hit");number1Hold=attackCooldown}
+      }
+    }
+
+    function homeX(index){return GAME.clientWidth*(index===0?.27:.73)}
+
+    function placeBranch(element,x,top){
+      element.style.left=`${x}px`;
+      element.style.top=`${top}px`;
+    }
+
+    function activeBranchBounds(){
+      if(activeBranchIndex<0)return null;
+      const element=BRANCHES[activeBranchIndex];
+      return {
+        left:parseFloat(element.style.left)-BRANCH_WIDTH/2,
+        right:parseFloat(element.style.left)+BRANCH_WIDTH/2,
+        top:parseFloat(element.style.top),
+        bottom:parseFloat(element.style.top)+BRANCH_HEIGHT
+      };
+    }
+
+    function pointHitsBranch(point,radius){
+      const bounds=activeBranchBounds();
+      if(!bounds)return false;
+      const dx=Math.max(bounds.left-point.x,0,point.x-bounds.right);
+      const dy=Math.max(bounds.top-point.y,0,point.y-bounds.bottom);
+      return Math.hypot(dx,dy)<=radius;
+    }
+
+    function finishCase(result,saveFailed=false){
+      if(finished)return;
+      finished=true;
+      MESSAGE.textContent="";
+      MESSAGE.style.opacity="0";
+      window.setTimeout(()=>{
+        const query=new URLSearchParams({result});
+        if(saveFailed)query.set("save","failed");
+        window.location.href=`Exit.html?${query}`;
+      },1000);
+    }
+
+    function saveCompletion(){
+      try{
+        const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");
+        progress.cases=progress.cases||{};
+        progress.cases[CASE_KEY]="COMPLETED";
+        unlockPlayerSkin(progress,44,"Halloween");
+        localStorage.setItem("sixtySevenProgress",JSON.stringify(progress));
+        localStorage.setItem("caseHalloweenMasacreCompleted","true");
+        return true;
+      }catch(error){
+        console.error("Could not save Halloween case completion.",error);
+        return false;
+      }
+    }
+
+    function damageBranch(amount){
+      if(activeBranchIndex<0||!["FLOAT","HOVER","PLUNGE","GROUNDED"].includes(phase)||branchHp<=0)return;
+      branchHp=Math.max(0,branchHp-amount);
+      const branch=BRANCHES[activeBranchIndex];
+      branch.style.opacity=".35";
+      window.setTimeout(()=>{branch.style.opacity="1"},90);
+      if(branchHp===0)finishCase("victory",!saveCompletion());
+    }
+
+    function hurtPlayer(){
+      if(finished||damageCooldown>0||playerInvulnerable>0)return;
+      damageCooldown=.8;
+      hearts--;
+      drawHealth();
+      if(hearts<=0)finishCase("defeat");
+    }
+
+    function signalAttack(){
+      activeBranchIndex=nextBranchIndex;
+      nextBranchIndex=1-nextBranchIndex;
+      targetX=Math.max(60,Math.min(GAME.clientWidth-60,playerX));
+      phase="TELEGRAPH";
+      phaseTimer=3;
+      branchHit=false;
+      TREE.src="../Media/Enemy/BloodTree/TreeBloodAGRO.png";
+    }
+
+    function beginBranchMotion(){
+      const branch=BRANCHES[activeBranchIndex];
+      branch.src="../Media/Enemy/BloodTree/BranchBlood.png";
+      branch.classList.add("active");
+      branch.style.height=`${BRANCH_HEIGHT}px`;
+      branch.style.opacity="1";
+      branch.style.display="block";
+      placeBranch(branch,homeX(activeBranchIndex),BRANCH_HIDDEN_TOP);
+      phase="FLOAT";
+      phaseElapsed=0;
+    }
+
+    function updateEncounter(dt){
+      if(phase==="REST"){
+        phaseTimer-=dt;
+        if(phaseTimer<=0)signalAttack();
+        return;
+      }
+      if(phase==="TELEGRAPH"){
+        phaseTimer-=dt;
+        if(phaseTimer<=0)beginBranchMotion();
+        return;
+      }
+
+      const branch=BRANCHES[activeBranchIndex];
+      const startX=homeX(activeBranchIndex);
+      if(phase==="FLOAT"){
+        phaseElapsed+=dt;
+        const progress=Math.min(1,phaseElapsed/BRANCH_TRAVEL_TIME);
+        const x=startX+(targetX-startX)*progress;
+        const hoverTop=-BRANCH_HEIGHT*.4;
+        const top=BRANCH_HIDDEN_TOP+(hoverTop-BRANCH_HIDDEN_TOP)*progress;
+        placeBranch(branch,x,top);
+        if(progress>=1){phase="HOVER";phaseTimer=BRANCH_HOVER_TIME}
+      }else if(phase==="HOVER"){
+        phaseTimer-=dt;
+        if(phaseTimer<=0){phase="PLUNGE";phaseElapsed=0}
+      }else if(phase==="PLUNGE"){
+        phaseElapsed+=dt;
+        const progress=Math.min(1,phaseElapsed/BRANCH_PLUNGE_TIME);
+        const hoverTop=-BRANCH_HEIGHT*.4;
+        const landingTop=GAME.clientHeight-GROUND_HEIGHT-BRANCH_HEIGHT;
+        const top=hoverTop+(landingTop-hoverTop)*progress;
+        placeBranch(branch,targetX,top);
+        if(!branchHit&&branchOverlapsPlayer()){branchHit=true;hurtPlayer()}
+        if(progress>=1){phase="GROUNDED";phaseTimer=BRANCH_GROUNDED_TIME}
+      }else if(phase==="GROUNDED"){
+        phaseTimer-=dt;
+        if(!branchHit&&branchOverlapsPlayer()){branchHit=true;hurtPlayer()}
+        if(phaseTimer<=0){phase="RETURN";phaseElapsed=0}
+      }else if(phase==="RETURN"){
+        phaseElapsed+=dt;
+        const progress=Math.min(1,phaseElapsed/BRANCH_RETURN_TIME);
+        const landingTop=GAME.clientHeight-GROUND_HEIGHT-BRANCH_HEIGHT;
+        const x=targetX+(startX-targetX)*progress;
+        const top=landingTop+(BRANCH_HIDDEN_TOP-landingTop)*progress;
+        placeBranch(branch,x,top);
+        if(progress>=1){
+          branch.classList.remove("active");
+          branch.style.display="none";
+          placeBranch(branch,startX,BRANCH_HIDDEN_TOP);
+          branch.style.height=`${BRANCH_HEIGHT}px`;
+          activeBranchIndex=-1;
+          TREE.src="../Media/Enemy/BloodTree/TreeBlood.png";
+          phase="REST";
+          phaseTimer=1.3;
+        }
+      }
+    }
+
+    function branchOverlapsPlayer(){
+      const bounds=activeBranchBounds();
+      const playerWidth=PLAYER_PROFILE.width*PLAYER_SCALE;
+      const playerHeight=PLAYER_PROFILE.height*PLAYER_SCALE;
+      const playerBounds={
+        left:playerX-playerWidth/2+5,
+        right:playerX+playerWidth/2-5,
+        top:GAME.clientHeight-(GROUND_HEIGHT+playerY+playerHeight),
+        bottom:GAME.clientHeight-(GROUND_HEIGHT+playerY)
+      };
+      return bounds&&bounds.left<playerBounds.right&&bounds.right>playerBounds.left&&bounds.top<playerBounds.bottom&&bounds.bottom>playerBounds.top;
+    }
+
+    function attackWithWeapon(){
+      attackWithWeaponOfKind("space");
+    }
+
+    function attackWithWeaponOfKind(kind){
+      if(finished||attackCooldown>0)return;
+      if(currentNumber===5&&projectile){
+        const recalled=getPlayerRecallPosition(currentNumber,projectile,{x:playerX,y:playerY});
+        playerX=recalled.x;
+        playerY=Math.max(0,recalled.y-GROUND_HEIGHT);
+        onGround=false;velocityY=0;projectile=null;PROJECTILE_IMAGE.hidden=true;PROJECTILE_IMAGE.style.display="none";
+        return;
+      }
+      if(!tryStartPlayerAttack(currentNumber))return;
+      facing=branchAttackTargetX()>=playerX?1:-1;
+      attackKind=kind;
+      attacking=true;
+      attackElapsed=0;
+      attackHit=false;
+      attackAnimationTime=currentNumber===1?getPlayerActionDuration(1,"swing"):getPlayerActionDuration(currentNumber,currentNumber===-1||currentNumber===44?"dash":"swing");
+      attackCooldown=attackAnimationTime;
+      if(currentNumber===1)number1Hold=getPlayerActionDuration(1,"swing");
+      if(currentNumber===-1||currentNumber===44){
+        playerDashTime=getPlayerActionDuration(currentNumber,"dash");
+        playerDashDirection=currentNumber===44&&keys.left!==keys.right?(keys.left?-1:1):facing;
+        playerDashHit=false;
+        if(currentNumber===-1)playerInvulnerable=Math.max(playerInvulnerable,.5);
+        if(currentNumber===44){facing=playerDashDirection;velocityY=0}
+        return;
+      }
+      if([3,5,16].includes(currentNumber)){
+        projectile=createPlayerProjectile(currentNumber,playerX,GROUND_HEIGHT+playerY,facing);
+        PROJECTILE_IMAGE.src=playerSpritePath(currentNumber,currentNumber===3?"Arrow":currentNumber===5?"Alt":"Bomb");
+        PROJECTILE_IMAGE.style.left=`${projectile.x}px`;
+        PROJECTILE_IMAGE.style.bottom=`${projectile.y}px`;
+        PROJECTILE_IMAGE.style.display="block";
+      }
+    }
+
+    function updateProjectile(dt){
+      if(!projectile)return;
+      const update=updatePlayerProjectileState(projectile,dt,playerX,GAME.clientWidth);
+      projectile=update.projectile;
+      if(!projectile){PROJECTILE_IMAGE.style.display="none";return}
+      PROJECTILE_IMAGE.style.left=`${projectile.x}px`;
+      PROJECTILE_IMAGE.style.bottom=`${projectile.y}px`;
+      PROJECTILE_IMAGE.style.transform=`translateX(-50%) scale(.75) scaleX(${projectile.direction})`;
+      if(currentNumber===16)PROJECTILE_IMAGE.src=playerSpritePath(16,projectile.phase==="exploding"?"Explode":"Bomb");
+      if(activeBranchIndex>=0&&["FLOAT","HOVER","PLUNGE","GROUNDED"].includes(phase)){
+        const point={x:projectile.x,y:GAME.clientHeight-projectile.y};
+        if(pointHitsBranch(point,42)&&(projectile.kind!=="bomb"||projectile.phase==="exploding")){
+          const action=projectile.kind==="bomb"?"bomb":projectile.kind==="blade"?(projectile.phase==="returning"?"returning":"outbound"):"arrow";
+          projectile=null;
+          PROJECTILE_IMAGE.style.display="none";
+          damageBranch(getPlayerDamage(currentNumber,action));
+          return;
+        }
+      }
+      if(update.expired||update.recalled){projectile=null;PROJECTILE_IMAGE.style.display="none"}
+    }
+
+    function loop(now){
+      const dt=Math.min((now-lastTime)/1000,.04);
+      lastTime=now;
+      if(finished)return;
+      const movement=(keys.right?1:0)-(keys.left?1:0);
+      if(playerDashTime>0){
+        playerDashTime=Math.max(0,playerDashTime-dt);
+        playerX+=playerDashDirection*900*dt;
+        facing=playerDashDirection;
+        if(!playerDashHit&&activeBranchIndex>=0&&["FLOAT","HOVER","PLUNGE","GROUNDED"].includes(phase)){
+          const point={x:playerX,y:GAME.clientHeight-(GROUND_HEIGHT+playerY+PLAYER_PROFILE.height*PLAYER_SCALE/2)};
+          if(pointHitsBranch(point,58)){playerDashHit=true;damageBranch(getPlayerDamage(currentNumber,"dash"))}
+        }
+      }else if(movement&&(onGround||canPlayerControlInAir(currentNumber))&&canPlayerMove({finished,attackTime:attackCooldown,dashTime:playerDashTime,number1Hold,recallingBlade:currentNumber===5&&projectile?.kind==="blade"})){
+        playerX+=movement*PLAYER_PROFILE.speed*dt;
+        facing=movement;
+      }
+      playerX=Math.max(24,Math.min(GAME.clientWidth-24,playerX));
+      updateEncounter(dt);
+      updateProjectile(dt);
+      updatePlayerAttack(dt);
+      attackCooldown=Math.max(0,attackCooldown-dt);
+      number1Hold=Math.max(0,number1Hold-dt);
+      damageCooldown=Math.max(0,damageCooldown-dt);
+      playerInvulnerable=Math.max(0,playerInvulnerable-dt);
+      attackAnimationTime=Math.max(0,attackAnimationTime-dt);
+      if(attackAnimationTime===0)attacking=false;
+      updateCharacter4Animation(dt);
+      if(!onGround&&shouldApplyPlayerGravity(currentNumber,attacking)){
+        velocityY-=PLAYER_PROFILE.gravity*dt;
+        playerY+=velocityY*dt;
+        if(playerY<=0){playerY=0;velocityY=0;onGround=true;playerJumpsUsed=0}
+      }
+      drawPlayer();
+      requestAnimationFrame(loop);
+    }
+
+    window.addEventListener("keydown",event=>{
+      const key=event.key.toLowerCase();
+      if(["arrowleft","arrowright","arrowup"," "].includes(key)||Object.values(KEY_BINDINGS).includes(key))event.preventDefault();
+      if(finished)return;
+      if(key===KEY_BINDINGS.left||key==="arrowleft")keys.left=true;
+      if(key===KEY_BINDINGS.right||key==="arrowright")keys.right=true;
+      if((key===KEY_BINDINGS.jump||key==="arrowup")&&!event.repeat&&canPlayerJump(currentNumber)&&(onGround||(currentNumber===44&&playerJumpsUsed<2))){
+        velocityY=getPlayerJumpPower(currentNumber);onGround=false;
+        if(currentNumber===44)playerJumpsUsed++;
+        if(currentNumber===4)attackWithWeaponOfKind("jump");
+      }
+      if(key===KEY_BINDINGS.previous&&!event.repeat)cycleCharacter(-1);
+      if(key===KEY_BINDINGS.next&&!event.repeat)cycleCharacter(1);
+      for(let slot=1;slot<=5;slot++){
+        if(key===KEY_BINDINGS[`number${slot}`]&&!event.repeat&&playableNumbers[slot-1]!==undefined)setNumber(playableNumbers[slot-1]);
+      }
+      if(key===KEY_BINDINGS.attack&&!event.repeat&&attackCooldown<=0)attackWithWeapon();
+    });
+    window.addEventListener("blur",()=>{keys.left=keys.right=false});
+    window.addEventListener("keyup",event=>{
+      const key=event.key.toLowerCase();
+      if(key===KEY_BINDINGS.left||key==="arrowleft")keys.left=false;
+      if(key===KEY_BINDINGS.right||key==="arrowright")keys.right=false;
+    });
+    document.getElementById("NUMBER-CIRCLE").addEventListener("click",()=>cycleCharacter(1));
+
+    loadCharacters();
+    setNumber(currentNumber);
+    drawHealth();
+    BRANCHES.forEach((branch,index)=>{
+      branch.style.height=`${BRANCH_HEIGHT}px`;
+      branch.style.left=`${homeX(index)}px`;
+      branch.style.top=`${BRANCH_HIDDEN_TOP}px`;
+    });
+    PLAYER.style.left=`${playerX}px`;
+    drawPlayer();
+    requestAnimationFrame(loop);
+  </script>
 </body>
 </html>
