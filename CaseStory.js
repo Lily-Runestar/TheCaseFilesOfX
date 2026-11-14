@@ -9,26 +9,26 @@
   const stories = {
     christmas: {
       normal: {
-        intro: "The town's Christmas lights still glow, but no one is celebrating. Nicholas Renegade has taken over the frozen streets. Find a way through the storm and stop him before Christmas night ends.",
-        victory: "The storm has finally gone quiet. Nicholas Renegade is defeated, and the town can see its Christmas lights again.",
-        defeat: "The cold swallowed the last of your strength. Nicholas Renegade still rules the night."
+        intro: "12 days after Christmas, a darkness setled over the forest again. Heading inside, a tall figure stands, waiting...  -X",
+        victory: "The darkness lifts once more. The Christmas Nightmare is gone for now.  -X",
+        defeat: "By some miracle, life courses through my veins. But the Christmas Nightmare remains, waiting...  -X"
       },
       hell: {
-        intro: "The lights have gone dark. Nicholas Renegade is waiting in the heart of a relentless blizzard. You have one heart and no second chance.",
-        victory: "Even in the endless blizzard, Nicholas Renegade has fallen. The frozen night loosens its grip.",
-        defeat: "The blizzard claims you. Nicholas Renegade remains, untouched by the cold."
+        intro: "The forest is darker than before, and hiding at the center, a beast of unknown origin hides in the dark, smiling, looking for a kill...  -X",
+        victory: "The darkness lifts once more, this time for good, no poor people will die to this entity.  -X",
+        defeat: "The entity left me, enjoying the hunt too much to finish me off... \"Come back when you are stronger\".  -X"
       }
     },
     halloween: {
       normal: {
-        intro: "Deep in the Halloween woods, a blood-red gaze watches from inside an ancient tree. Its branches are moving, and the path behind you has disappeared. Face the Blood Tree and escape the forest.",
-        victory: "The Blood Tree's eyes have gone dark. The branches fall still, and a path out of the forest opens.",
-        defeat: "The forest closes around you. The Blood Tree's red eyes remain fixed on the path."
+        intro: "Inside the forest I was told a tree was killing inocent people. So into this forest I shall go, to investigate further  -X",
+        victory: "The Blood Tree's eyes have gone dark. The branches fall still, and a path out of the forest opens. The murders are done.  -X",
+        defeat: "The forest closed around me as I ran. The tree's eyes remain fixed on the path.  -X"
       },
       hell: {
-        intro: "The forest is soaked in blood, and the Blood Tree has awakened. Its branches will not rest. You have one heart; make every move count.",
-        victory: "The Blood Tree has fallen in the blood-soaked forest. For one quiet moment, the woods are still.",
-        defeat: "The Blood Tree's branches drag you into the dark. The forest keeps its secret."
+        intro: "The forest is soaked in blood, and the massacre has started up again. Something bloodsoaked is hiding and must be stopped.  -X",
+        victory: "The tree returned, covered in the blood, but it has been put to rest.  -X",
+        defeat: "The tree attempted to drag me down into the dirt, but I ran fast... But it is still there, waiting...  -X"
       }
     }
   };

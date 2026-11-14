@@ -366,6 +366,8 @@
 
   window.addEventListener("keydown", (event) => {
     const key = event.key.toLowerCase();
+    if (["arrowleft", "arrowright", "arrowup", " "].includes(key) || Object.values(keyBindings).includes(key)) event.preventDefault();
+    if (finished) return;
     if (key === keyBindings.left || key === "arrowleft") keys.left = true;
     if (key === keyBindings.right || key === "arrowright") keys.right = true;
     if ((key === keyBindings.jump || key === "arrowup") && !event.repeat && playerGrounded && canPlayerJump(number)) {
@@ -385,6 +387,10 @@
       }
     }
     if (key === keyBindings.attack && !event.repeat && attackCooldown <= 0) attackWithWeapon();
+  });
+  window.addEventListener("blur", () => {
+    keys.left = false;
+    keys.right = false;
   });
   window.addEventListener("keyup", (event) => {
     const key = event.key.toLowerCase();

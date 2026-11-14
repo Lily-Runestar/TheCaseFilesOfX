@@ -45,7 +45,7 @@ let projectile=null;
     function christmasPlayerSprite(character,frame){return playerSpritePath(character,frame)}
     for(const character of [-1,1,2,3,4,5,16,44])for(const frame of ["Still","Walk","WalkF1","WalkF2","WalkAlt","StillAlt","Jump","Fall","TravelF1","TravelF2","ThrowF1","ThrowF2","SwingF1","SwingF2","Swing","Release","Sweep","Charge","Bomb","Explode"]){const image=new Image();image.src=christmasPlayerSprite(character,frame)}
     function loadCharacters(){const unlocked=[1];try{const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");for(const [character,status] of Object.entries(progress.characters||{}))if(status=== "UNLOCKED")unlocked.push(Number(character))}catch(error){console.warn("Saved characters could not be read.",error)}unlockedNumbers=getSelectedPlayableNumbers(unlocked);if(!unlockedNumbers.includes(number))number=unlockedNumbers[0]||1}
-    function setNumber(character){if(!unlockedNumbers.includes(character))return;number=character;draw()}
+    function setNumber(character){if(!unlockedNumbers.includes(character))return;if(character!==number){projectile=null;playerProjectile.style.display="none";playerAttacking=false;attackCooldown=0;number1Hold=0}number=character;draw()}
     function drawHealth(){health.replaceChildren();for(let i=0;i<getStartingHealth();i++){const heart=document.createElement("img");heart.className="heart";heart.src="../Media/Images/Heart.png";heart.alt=i<playerHealth?"Heart":"Empty heart";heart.style.opacity=i<playerHealth?"1":".2";health.appendChild(heart)}}
     function playerFrame(){
       const alternate=Math.floor(performance.now()/140)%2;
@@ -134,8 +134,20 @@ let projectile=null;
       if(Math.abs(projectile.x-bossX)<55&&bossHealth>0&&((projectile.kind=== "blade"&&projectile.phase=== "returning")?!projectile.returnHit:!projectile.outboundHit)){const action=projectile.kind=== "blade"?(projectile.phase=== "returning"?"returning":"outbound"):"arrow";if(projectile.phase=== "returning")projectile.returnHit=true;else projectile.outboundHit=true;bossHealth=Math.max(0,bossHealth-getPlayerDamage(number,action));flashBoss();if(bossHealth===0)victory();projectile=null;playerProjectile.style.display="none"}
       if(projectileUpdate.expired||projectileUpdate.recalled){projectile=null;playerProjectile.style.display="none"}
     }
-    addEventListener("keydown",e=>{const key=e.key.toLowerCase();if(key===keyBindings.left||key=== "arrowleft")keys.left=true;if(key===keyBindings.right||key=== "arrowright")keys.right=true;if((key===keyBindings.jump||key=== "arrowup")&&!e.repeat&&playerGrounded&&canPlayerJump(number)){playerVelocityY=getPlayerJumpPower(number);playerGrounded=false}if(key===keyBindings.previous&&!e.repeat){const index=unlockedNumbers.indexOf(number);setNumber(unlockedNumbers[(index-1+unlockedNumbers.length)%unlockedNumbers.length])}if(key===keyBindings.next&&!e.repeat){const index=unlockedNumbers.indexOf(number);setNumber(unlockedNumbers[(index+1)%unlockedNumbers.length])}if(key===keyBindings.attack&&!e.repeat&&attackCooldown<=0)attackWithWeapon()});
+    addEventListener("keydown",e=>{
+      const key=e.key.toLowerCase();
+      if(["arrowleft","arrowright","arrowup"," "].includes(key)||Object.values(keyBindings).includes(key))e.preventDefault();
+      if(finished)return;
+      if(key===keyBindings.left||key==="arrowleft")keys.left=true;
+      if(key===keyBindings.right||key==="arrowright")keys.right=true;
+      if((key===keyBindings.jump||key==="arrowup")&&!e.repeat&&playerGrounded&&canPlayerJump(number)){playerVelocityY=getPlayerJumpPower(number);playerGrounded=false}
+      if(key===keyBindings.previous&&!e.repeat&&unlockedNumbers.length>1){const index=unlockedNumbers.indexOf(number);setNumber(unlockedNumbers[(index-1+unlockedNumbers.length)%unlockedNumbers.length])}
+      if(key===keyBindings.next&&!e.repeat&&unlockedNumbers.length>1){const index=unlockedNumbers.indexOf(number);setNumber(unlockedNumbers[(index+1)%unlockedNumbers.length])}
+      for(let slot=1;slot<=5;slot++)if(key===keyBindings[`number${slot}`]&&!e.repeat){const cycle=loadPlayerSettings().cycle;setNumber(cycle[slot-1]??[1,2,3,4,5][slot-1])}
+      if(key===keyBindings.attack&&!e.repeat&&attackCooldown<=0)attackWithWeapon()
+    });
     addEventListener("keyup",e=>{const key=e.key.toLowerCase();if(key===keyBindings.left||key==="arrowleft")keys.left=false;if(key===keyBindings.right||key==="arrowright")keys.right=false});
+    addEventListener("blur",()=>{keys.left=keys.right=false});
     loadCharacters();drawHealth();bossX=game.clientWidth-140;draw();requestAnimationFrame(loop);
   </script>
 </body>

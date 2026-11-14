@@ -354,6 +354,8 @@
 
     window.addEventListener("keydown",event=>{
       const key=event.key.toLowerCase();
+      if(["arrowleft","arrowright","arrowup"," "].includes(key)||Object.values(KEY_BINDINGS).includes(key))event.preventDefault();
+      if(finished)return;
       if(key===KEY_BINDINGS.left||key==="arrowleft")keys.left=true;
       if(key===KEY_BINDINGS.right||key==="arrowright")keys.right=true;
       if((key===KEY_BINDINGS.jump||key==="arrowup")&&!event.repeat&&onGround&&canPlayerJump(currentNumber)){
@@ -366,6 +368,7 @@
       }
       if(key===KEY_BINDINGS.attack&&!event.repeat&&attackCooldown<=0)attackWithWeapon();
     });
+    window.addEventListener("blur",()=>{keys.left=keys.right=false});
     window.addEventListener("keyup",event=>{
       const key=event.key.toLowerCase();
       if(key===KEY_BINDINGS.left||key==="arrowleft")keys.left=false;
