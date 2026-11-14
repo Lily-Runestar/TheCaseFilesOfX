@@ -38,6 +38,9 @@
     const meteor=document.getElementById("meteor"),playerProjectile=document.getElementById("PLAYER-PROJECTILE"),health=document.getElementById("health"),message=document.getElementById("message");
     const keys={left:false,right:false},asset="../Media/Enemy/NicholasRenegade/",keyBindings=loadPlayerBindings();
     let unlockedNumbers=[1],number=1,playerX=120,playerY=0,playerVelocityY=0,playerGrounded=true,playerYVelocity=0,playerAttacking=false,attackCooldown=0,damageCooldown=0,number1Hold=0;
+    let playerAttackElapsed=0,playerAttackHit=false,playerAttackKind="space",playerAttackAnimationTime=0;
+    let playerDashTime=0,playerDashDirection=1,playerDashHit=false,playerInvulnerable=0,playerJumpsUsed=0;
+    let playerFlip=1,fourFlipState="",fourFlipTimer=0;
     let bossX=game.clientWidth-140,bossHealth=100,playerHealth=getStartingHealth(),facing=1,last=performance.now(),phase="DELAY",phaseTimer=1.5,activeTell="",finished=false;
 let projectile=null;
     const tells=["BLUE","RED","YELLOW","PURPLE"];
@@ -45,12 +48,13 @@ let projectile=null;
     function christmasPlayerSprite(character,frame){return playerSpritePath(character,frame)}
     for(const character of [-1,1,2,3,4,5,16,44])for(const frame of ["Still","Walk","WalkF1","WalkF2","WalkAlt","StillAlt","Jump","Fall","TravelF1","TravelF2","ThrowF1","ThrowF2","SwingF1","SwingF2","Swing","Release","Sweep","Charge","Bomb","Explode"]){const image=new Image();image.src=christmasPlayerSprite(character,frame)}
     function loadCharacters(){const unlocked=[1];try{const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");for(const [character,status] of Object.entries(progress.characters||{}))if(status=== "UNLOCKED")unlocked.push(Number(character))}catch(error){console.warn("Saved characters could not be read.",error)}unlockedNumbers=getSelectedPlayableNumbers(unlocked);if(!unlockedNumbers.includes(number))number=unlockedNumbers[0]||1}
-    function setNumber(character){if(!unlockedNumbers.includes(character))return;if(character!==number){projectile=null;playerProjectile.style.display="none";playerAttacking=false;attackCooldown=0;number1Hold=0}number=character;draw()}
+    function setNumber(character){if(!unlockedNumbers.includes(character))return;if(character!==number){projectile=null;playerProjectile.style.display="none";playerAttacking=false;attackCooldown=0;number1Hold=0;playerAttackAnimationTime=0;playerDashTime=0;fourFlipState="";playerFlip=1;fourFlipTimer=0}number=character;draw()}
     function drawHealth(){health.replaceChildren();for(let i=0;i<getStartingHealth();i++){const heart=document.createElement("img");heart.className="heart";heart.src="../Media/Images/Heart.png";heart.alt=i<playerHealth?"Heart":"Empty heart";heart.style.opacity=i<playerHealth?"1":".2";health.appendChild(heart)}}
     function playerFrame(){
       const alternate=Math.floor(performance.now()/140)%2;
       if(number===1&&number1Hold>0)return "SwingF2";
       const state=!playerGrounded?(playerVelocityY>0?"JUMP":"FALL"):keys.left||keys.right?"WALK":"STILL";
+      if(number===4&&playerAttacking&&playerAttackKind==="jump")return "Jump";
       if(!playerAttacking&&state!=="STILL")return getPlayerAnimationFrame(number,state,false,alternate);
       if(number===-1)return playerAttacking?"Charge":keys.left||keys.right?"Walk":"Still";
       if(number===3)return playerAttacking?(alternate?"Release":"Swing"):!playerGrounded?(playerVelocityY>0?"Jump":"Fall"):keys.left||keys.right?"Walk":"Still";
@@ -58,10 +62,13 @@ let projectile=null;
       if(number===5)return !playerGrounded?"Still":playerAttacking?"StillAlt":keys.left||keys.right?(alternate?"WalkAlt":"Walk"):(alternate?"StillAlt":"Still");
       return playerAttacking?getPlayerAnimationFrame(number,"ATTACK",true,alternate):getPlayerAnimationFrame(number,"STILL",false,alternate);
     }
-    function draw(){player.src=christmasPlayerSprite(number,playerFrame());player.style.left=`${playerX}px`;player.style.bottom=`${78+playerY}px`;const characterMirror=getPlayerHorizontalFlip(number,facing,playerGrounded,playerAttacking,performance.now());const travelRotation=number===44&&!playerGrounded?(playerVelocityY>0?-90:playerVelocityY<0?90:0):0;player.style.transform=`translateX(-50%) scale(.56) rotate(${travelRotation}deg) scaleX(${-facing*characterMirror})`; boss.style.left=`${bossX}px`;boss.style.transform=`translateX(-50%) scaleX(${bossX>game.clientWidth/2?-1:1})`}
+    function draw(){player.src=christmasPlayerSprite(number,playerFrame());applyPlayerSpritePivot(player,number,playerX,78+playerY,PLAYER_PROFILE.scale);const facingFlip=number===44&&playerDashTime>0&&playerDashDirection>0?1:facing===1?-1:1;const animationFlip=number===4&&(fourFlipState==="FALL"||(fourFlipState==="SWING"&&playerAttackKind!=="jump"))?playerFlip:1;const travelRotation=number===44?(playerDashTime>0&&playerDashDirection>0?180:!playerGrounded?(playerVelocityY>0?-90*facing:playerVelocityY<0?90*facing:0):0):0;player.style.transform=`translateX(-50%) scale(${PLAYER_PROFILE.scale}) rotate(${travelRotation}deg) scaleX(${facingFlip*animationFlip})`;boss.style.left=`${bossX}px`;boss.style.transform=`translateX(-50%) scaleX(${bossX>game.clientWidth/2?-1:1})`}
+    function updateCharacter4Animation(dt){const state=number!==4?"":playerAttacking&&playerAttackKind!=="jump"?"SWING":!playerGrounded&&playerVelocityY<=0?"FALL":"";if(state!==fourFlipState){fourFlipState=state;playerFlip=1;fourFlipTimer=0}if(!state)return;fourFlipTimer+=dt;while(fourFlipTimer>=.07){fourFlipTimer-=.07;playerFlip*=-1}}
+    function playerAttackHitsBoss(){const distance=bossX-playerX;return Math.abs(distance)<112&&Math.abs(playerY)<88&&Math.sign(distance||facing)===facing}
+    function updatePlayerAttack(dt){if(!playerAttacking||playerAttackHit||[-1,3,5,16,44].includes(number))return;playerAttackElapsed+=dt;if(playerAttackElapsed<(playerAttackKind==="jump"?.1:.18))return;playerAttackHit=true;if(playerAttackHitsBoss()&&bossHealth>0){bossHealth=Math.max(0,bossHealth-getPlayerDamage(number,playerAttackKind==="jump"?"jump":"space"));if(number===1){attackCooldown=getPlayerActionDuration(1,"hit");number1Hold=attackCooldown}flashBoss();if(bossHealth===0)victory()}}
     function flashBoss(){let flashes=0;const pulse=()=>{if(flashes>=6){boss.style.opacity="1";return}boss.style.opacity=flashes++%2?"1":"0.25";window.setTimeout(pulse,90)};pulse()}
     function finishCase(result,text){finished=true;message.textContent=text;window.setTimeout(()=>window.location.href=`Exit.html?result=${result}`,1000)}
-    function hurtPlayer(){if(finished||damageCooldown>0)return;damageCooldown=.7;playerHealth--;drawHealth();if(playerHealth<=0)finishCase("defeat","DEFEATED")}
+    function hurtPlayer(){if(finished||damageCooldown>0||playerInvulnerable>0)return;damageCooldown=.7;playerHealth--;drawHealth();if(playerHealth<=0)finishCase("defeat","DEFEATED")}
     function unlockCharacter16(){try{const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");progress.characters=progress.characters||{};progress.characters["16"]="UNLOCKED";progress.cases=progress.cases||{};progress.cases.CaseChristmasNightmare="COMPLETED";localStorage.setItem("sixtySevenProgress",JSON.stringify(progress));localStorage.setItem("caseChristmasNightmareCompleted","true")}catch(error){console.error("Could not unlock Character 16",error)}}
     function victory(){if(finished)return;unlockCharacter16();finishCase("victory","VICTORY — 16 UNLOCKED")}
     let attackObjects=[];
@@ -85,7 +92,21 @@ let projectile=null;
     function loop(now){
       const dt=Math.min((now-last)/1000,.04);last=now;
       if(!finished){
-        const movement=(keys.right?1:0)-(keys.left?1:0);if((playerGrounded||canPlayerControlInAir(number))&&canPlayerMove({finished,attackTime:attackCooldown,number1Hold,recallingBlade:number===5&&projectile?.kind=== "blade"}))playerX+=movement*PLAYER_PROFILE.speed*dt;if(movement)facing=movement;
+        const movement=(keys.right?1:0)-(keys.left?1:0);
+        if(playerDashTime>0){
+          playerDashTime=Math.max(0,playerDashTime-dt);
+          playerX+=playerDashDirection*900*dt;
+          facing=playerDashDirection;
+          if(!playerDashHit&&Math.abs(playerX-bossX)<58&&Math.abs(playerY)<92){
+            playerDashHit=true;
+            bossHealth=Math.max(0,bossHealth-getPlayerDamage(number,"dash"));
+            flashBoss();
+            if(bossHealth===0)victory();
+          }
+        }else if(movement&&(playerGrounded||canPlayerControlInAir(number))&&canPlayerMove({finished,attackTime:attackCooldown,dashTime:playerDashTime,number1Hold,recallingBlade:number===5&&projectile?.kind==="blade"})){
+          playerX+=movement*PLAYER_PROFILE.speed*dt;
+          facing=movement;
+        }
         playerX=Math.max(22,Math.min(game.clientWidth-22,playerX));phaseTimer-=dt;
         if(phase=== "DELAY"&&phaseTimer<=0){phase="STILL";phaseTimer=5}
         else if(phase=== "STILL"&&phaseTimer<=0){activeTell=tells[Math.floor(Math.random()*tells.length)];boss.src=asset+({BLUE:"Blue.png",RED:"Red.png",YELLOW:"Yellow.png",PURPLE:"Purple.png"}[activeTell]);phase="READY";phaseTimer=1}
@@ -104,21 +125,29 @@ let projectile=null;
             if(parseFloat(meteor.style.bottom)<=78){meteor.style.bottom="78px";meteor.src=asset+"Boom.png";meteor.style.transform="translateX(-50%) scale(.75)";if(Math.abs(parseFloat(meteor.style.left)-playerX)<110)hurtPlayer();window.setTimeout(()=>{meteor.src=asset+"Meteor.png";meteor.style.display="none"},350)}
           }
         }
-        updateWeapon(dt);playerYVelocity=playerVelocityY;damageCooldown=Math.max(0,damageCooldown-dt);attackCooldown=Math.max(0,attackCooldown-dt);number1Hold=Math.max(0,number1Hold-dt);
-        if(!playerGrounded&&shouldApplyPlayerGravity(number,playerAttacking)){playerVelocityY-=1900*dt;playerY+=playerVelocityY*dt;if(playerY<=0){playerY=0;playerVelocityY=0;playerGrounded=true}}
+        updateWeapon(dt);updatePlayerAttack(dt);playerYVelocity=playerVelocityY;damageCooldown=Math.max(0,damageCooldown-dt);attackCooldown=Math.max(0,attackCooldown-dt);number1Hold=Math.max(0,number1Hold-dt);playerInvulnerable=Math.max(0,playerInvulnerable-dt);playerAttackAnimationTime=Math.max(0,playerAttackAnimationTime-dt);if(playerAttackAnimationTime===0)playerAttacking=false;updateCharacter4Animation(dt);
+        if(!playerGrounded&&shouldApplyPlayerGravity(number,playerAttacking)){playerVelocityY-=PLAYER_PROFILE.gravity*dt;playerY+=playerVelocityY*dt;if(playerY<=0){playerY=0;playerVelocityY=0;playerGrounded=true;playerJumpsUsed=0}}
         draw();requestAnimationFrame(loop);
       }}
-    function attackWithWeapon(){
-      playerAttacking=true;
-      attackCooldown=getPlayerActionDuration(number,"swing");
-      if(number===1){number1Hold=getPlayerActionDuration(1,"swing")}
-      if(number===5&&projectile){const recalled=getPlayerRecallPosition(number,projectile,{x:playerX,y:playerY});playerX=recalled.x;playerY=0;playerGrounded=true;projectile=null;playerProjectile.style.display="none";attackCooldown=.36;return}
+    function attackWithWeapon(kind="space"){
+      if(finished||attackCooldown>0)return;
+      if(number===5&&projectile){const recalled=getPlayerRecallPosition(number,projectile,{x:playerX,y:playerY});playerX=recalled.x;playerY=Math.max(0,recalled.y-78);playerGrounded=false;playerVelocityY=0;projectile=null;playerProjectile.style.display="none";return}
+      facing=bossX>=playerX?1:-1;
+      playerAttackKind=kind;playerAttacking=true;playerAttackElapsed=0;playerAttackHit=false;
+      playerAttackAnimationTime=number===1?getPlayerActionDuration(1,"swing"):getPlayerActionDuration(number,number===-1||number===44?"dash":"swing");
+      attackCooldown=playerAttackAnimationTime;
+      if(number===1)number1Hold=getPlayerActionDuration(1,"swing");
+      if(number===-1||number===44){
+        playerDashTime=getPlayerActionDuration(number,"dash");
+        playerDashDirection=number===44&&keys.left!==keys.right?(keys.left?-1:1):facing;
+        playerDashHit=false;
+        if(number===-1)playerInvulnerable=Math.max(playerInvulnerable,.5);
+        if(number===44){facing=playerDashDirection;playerVelocityY=0}
+        return;
+      }
       if(number===3){projectile=createPlayerProjectile(number,playerX,78+playerY,facing);playerProjectile.src=playerSpritePath(3,"Arrow");playerProjectile.style.bottom=`${projectile.y}px`;playerProjectile.style.left=`${projectile.x}px`;playerProjectile.style.display="block";playerProjectile.style.transform=`translateX(-50%) scaleX(${facing})`}
       else if(number===5){projectile=createPlayerProjectile(number,playerX,78+playerY,facing);playerProjectile.src=playerSpritePath(5,"Alt");playerProjectile.style.bottom=`${projectile.y}px`;playerProjectile.style.left=`${projectile.x}px`;playerProjectile.style.display="block";playerProjectile.style.transform=`translateX(-50%) scale(.65) scaleX(${facing})`}
       else if(number===16){projectile=createPlayerProjectile(number,playerX,78+playerY,facing);playerProjectile.src=playerSpritePath(16,"Bomb");playerProjectile.style.bottom=`${projectile.y}px`;playerProjectile.style.left=`${projectile.x}px`;playerProjectile.style.display="block";playerProjectile.style.transform=`translateX(-50%) scaleX(${facing})`}
-      else if(number===-1||number===44){playerX=Math.max(22,Math.min(game.clientWidth-22,playerX+facing*180));if(number===44)playerVelocityY=0}
-      if(number!==16&&Math.abs(playerX-bossX)<110&&bossHealth>0){bossHealth=Math.max(0,bossHealth-getPlayerDamage(number));attackCooldown=number===1?0.9:attackCooldown;if(number===1){number1Hold=getPlayerActionDuration(1,"hit");attackCooldown=number1Hold}flashBoss();if(bossHealth===0)victory()}
-      setTimeout(()=>playerAttacking=false,180);
     }
     function updateWeapon(dt){
       if(!projectile)return;
@@ -140,7 +169,7 @@ let projectile=null;
       if(finished)return;
       if(key===keyBindings.left||key==="arrowleft")keys.left=true;
       if(key===keyBindings.right||key==="arrowright")keys.right=true;
-      if((key===keyBindings.jump||key==="arrowup")&&!e.repeat&&playerGrounded&&canPlayerJump(number)){playerVelocityY=getPlayerJumpPower(number);playerGrounded=false}
+      if((key===keyBindings.jump||key==="arrowup")&&!e.repeat&&canPlayerJump(number)&&(playerGrounded||(number===44&&playerJumpsUsed<2))){playerVelocityY=getPlayerJumpPower(number);playerGrounded=false;if(number===44)playerJumpsUsed++;if(number===4)attackWithWeapon("jump")}
       if(key===keyBindings.previous&&!e.repeat&&unlockedNumbers.length>1){const index=unlockedNumbers.indexOf(number);setNumber(unlockedNumbers[(index-1+unlockedNumbers.length)%unlockedNumbers.length])}
       if(key===keyBindings.next&&!e.repeat&&unlockedNumbers.length>1){const index=unlockedNumbers.indexOf(number);setNumber(unlockedNumbers[(index+1)%unlockedNumbers.length])}
       for(let slot=1;slot<=5;slot++)if(key===keyBindings[`number${slot}`]&&!e.repeat){const cycle=loadPlayerSettings().cycle;setNumber(cycle[slot-1]??[1,2,3,4,5][slot-1])}

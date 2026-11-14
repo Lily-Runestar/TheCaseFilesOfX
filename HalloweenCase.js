@@ -24,6 +24,18 @@
   let playerGrounded = true;
   let playerAttacking = false;
   let attackCooldown = 0;
+  let attackAnimationTime = 0;
+  let playerAttackElapsed = 0;
+  let playerAttackHit = false;
+  let playerAttackKind = "space";
+  let playerDashTime = 0;
+  let playerDashDirection = 1;
+  let playerDashHit = false;
+  let playerInvulnerable = 0;
+  let playerJumpsUsed = 0;
+  let playerFlip = 1;
+  let fourFlipState = "";
+  let fourFlipTimer = 0;
   let damageCooldown = 0;
   let number1Hold = 0;
   let branchHp = 100;
@@ -61,6 +73,18 @@
 
   function setNumber(character) {
     if (!playableNumbers.includes(character)) return;
+    if (character !== number) {
+      projectile = null;
+      document.getElementById("PLAYER-PROJECTILE").style.display = "none";
+      playerAttacking = false;
+      attackCooldown = 0;
+      number1Hold = 0;
+      attackAnimationTime = 0;
+      playerDashTime = 0;
+      fourFlipState = "";
+      playerFlip = 1;
+      fourFlipTimer = 0;
+    }
     number = character;
     numberImage.src = `../Media/Images/${number}.png`;
     numberImage.alt = `Number ${number}`;
@@ -79,15 +103,57 @@
     const state = !playerGrounded
       ? playerVelocityY > 0 ? "JUMP" : "FALL"
       : keys.left || keys.right ? "WALK" : "STILL";
+    if (number === 4 && playerAttacking && playerAttackKind === "jump") return "Jump";
     return getPlayerAnimationFrame(number, state, playerAttacking, alternate);
   }
 
   function draw() {
     player.src = playerSpritePath(number, playerFrame());
-    player.style.left = `${playerX}px`;
-    player.style.bottom = `${78 + playerY}px`;
-    const characterMirror = getPlayerHorizontalFlip(number, facing, playerGrounded, playerAttacking, performance.now());
-    player.style.transform = `translateX(-50%) scale(.56) scaleX(${-facing * characterMirror})`;
+    applyPlayerSpritePivot(player, number, playerX, 78 + playerY, PLAYER_PROFILE.scale);
+    const facingFlip = number === 44 && playerDashTime > 0 && playerDashDirection > 0 ? 1 : facing === 1 ? -1 : 1;
+    const animationFlip = number === 4 && (fourFlipState === "FALL" || (fourFlipState === "SWING" && playerAttackKind !== "jump")) ? playerFlip : 1;
+    const travelRotation = number === 44 ? (playerDashTime > 0 && playerDashDirection > 0 ? 180 : !playerGrounded ? (playerVelocityY > 0 ? -90 * facing : playerVelocityY < 0 ? 90 * facing : 0) : 0) : 0;
+    player.style.transform = `translateX(-50%) scale(${PLAYER_PROFILE.scale}) rotate(${travelRotation}deg) scaleX(${facingFlip * animationFlip})`;
+  }
+
+  function updateCharacter4Animation(dt) {
+    const state = number !== 4 ? "" : playerAttacking && playerAttackKind !== "jump" ? "SWING" : !playerGrounded && playerVelocityY <= 0 ? "FALL" : "";
+    if (state !== fourFlipState) {
+      fourFlipState = state;
+      playerFlip = 1;
+      fourFlipTimer = 0;
+    }
+    if (!state) return;
+    fourFlipTimer += dt;
+    while (fourFlipTimer >= .07) {
+      fourFlipTimer -= .07;
+      playerFlip *= -1;
+    }
+  }
+
+  function branchAttackTargetX() {
+    return branchSegment(1).end.x;
+  }
+
+  function playerAttackHitsBranch() {
+    if (phase !== "ATTACK") return false;
+    const { start, end } = branchSegment();
+    const playerPoint = { x: playerX + facing * 32, y: game.clientHeight - (78 + playerY + 40) };
+    return pointToSegmentDistance(playerPoint, start, end) < 110;
+  }
+
+  function updatePlayerAttack(dt) {
+    if (!playerAttacking || playerAttackHit || [-1, 3, 5, 16, 44].includes(number)) return;
+    playerAttackElapsed += dt;
+    if (playerAttackElapsed < (playerAttackKind === "jump" ? .1 : .18)) return;
+    playerAttackHit = true;
+    if (playerAttackHitsBranch()) {
+      damageBranch(getPlayerDamage(number, playerAttackKind === "jump" ? "jump" : "space"));
+      if (number === 1) {
+        attackCooldown = getPlayerActionDuration(1, "hit");
+        number1Hold = attackCooldown;
+      }
+    }
   }
 
   function flashBranch() {
@@ -130,7 +196,7 @@
   }
 
   function hurtPlayer() {
-    if (finished || damageCooldown > 0) return;
+    if (finished || damageCooldown > 0 || playerInvulnerable > 0) return;
     damageCooldown = .8;
     playerHealth--;
     drawHealth();
@@ -211,21 +277,38 @@
     boss.src = bloodTree + (hellMode ? "TreeBloodAGRO.png" : "TreeAGRO.png");
   }
 
-  function attackWithWeapon() {
-    playerAttacking = true;
-    attackCooldown = getPlayerActionDuration(number, "swing");
-    if (number === 1) number1Hold = getPlayerActionDuration(1, "swing");
+  function attackWithWeapon(kind = "space") {
+    if (finished || attackCooldown > 0) return;
     if (number === 5 && projectile) {
       const recalled = getPlayerRecallPosition(number, projectile, { x: playerX, y: playerY });
       playerX = recalled.x;
-      playerY = 0;
-      playerGrounded = true;
+      playerY = Math.max(0, recalled.y - 78);
+      playerGrounded = false;
+      playerVelocityY = 0;
       projectile = null;
       document.getElementById("PLAYER-PROJECTILE").style.display = "none";
-      attackCooldown = .36;
       return;
     }
 
+    facing = branchAttackTargetX() >= playerX ? 1 : -1;
+    playerAttackKind = kind;
+    playerAttacking = true;
+    playerAttackElapsed = 0;
+    playerAttackHit = false;
+    attackAnimationTime = number === 1 ? getPlayerActionDuration(1, "swing") : getPlayerActionDuration(number, number === -1 || number === 44 ? "dash" : "swing");
+    attackCooldown = attackAnimationTime;
+    if (number === 1) number1Hold = getPlayerActionDuration(1, "swing");
+    if (number === -1 || number === 44) {
+      playerDashTime = getPlayerActionDuration(number, "dash");
+      playerDashDirection = number === 44 && keys.left !== keys.right ? (keys.left ? -1 : 1) : facing;
+      playerDashHit = false;
+      if (number === -1) playerInvulnerable = Math.max(playerInvulnerable, .5);
+      if (number === 44) {
+        facing = playerDashDirection;
+        playerVelocityY = 0;
+      }
+      return;
+    }
     if ([3, 5, 16].includes(number)) {
       projectile = createPlayerProjectile(number, playerX, 78 + playerY, facing);
       const projectileImage = document.getElementById("PLAYER-PROJECTILE");
@@ -234,20 +317,7 @@
       projectileImage.style.left = `${projectile.x}px`;
       projectileImage.style.bottom = `${projectile.y}px`;
       projectileImage.style.display = "block";
-    } else {
-      if (number === -1 || number === 44) {
-        playerX = Math.max(22, Math.min(game.clientWidth - 22, playerX + facing * 180));
-        if (number === 44) playerVelocityY = 0;
-      }
-      if (phase === "ATTACK") {
-        const { start, end } = branchSegment();
-        const playerPoint = { x: playerX + facing * 32, y: game.clientHeight - (78 + playerY + 40) };
-        if (pointToSegmentDistance(playerPoint, start, end) < 110) {
-          damageBranch(getPlayerDamage(number));
-        }
-      }
     }
-    window.setTimeout(() => { playerAttacking = false; }, 180);
   }
 
   function updateWeapon(dt) {
@@ -340,17 +410,34 @@
     if (finished) return;
 
     const movement = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-    if ((playerGrounded || canPlayerControlInAir(number)) &&
-      canPlayerMove({ finished, attackTime: attackCooldown, number1Hold, recallingBlade: number === 5 && projectile?.kind === "blade" })) {
+    if (playerDashTime > 0) {
+      playerDashTime = Math.max(0, playerDashTime - dt);
+      playerX += playerDashDirection * 900 * dt;
+      facing = playerDashDirection;
+      if (!playerDashHit && phase === "ATTACK") {
+        const { start, end } = branchSegment();
+        const playerPoint = { x: playerX, y: game.clientHeight - (78 + playerY + 40) };
+        if (pointToSegmentDistance(playerPoint, start, end) < 58) {
+          playerDashHit = true;
+          damageBranch(getPlayerDamage(number, "dash"));
+        }
+      }
+    } else if (movement && (playerGrounded || canPlayerControlInAir(number)) &&
+      canPlayerMove({ finished, attackTime: attackCooldown, dashTime: playerDashTime, number1Hold, recallingBlade: number === 5 && projectile?.kind === "blade" })) {
       playerX += movement * PLAYER_PROFILE.speed * dt;
+      facing = movement;
     }
-    if (movement) facing = movement;
     playerX = Math.max(22, Math.min(game.clientWidth - 22, playerX));
     updateAttack(dt);
     updateWeapon(dt);
+    updatePlayerAttack(dt);
     damageCooldown = Math.max(0, damageCooldown - dt);
     attackCooldown = Math.max(0, attackCooldown - dt);
     number1Hold = Math.max(0, number1Hold - dt);
+    playerInvulnerable = Math.max(0, playerInvulnerable - dt);
+    attackAnimationTime = Math.max(0, attackAnimationTime - dt);
+    if (attackAnimationTime === 0) playerAttacking = false;
+    updateCharacter4Animation(dt);
     if (!playerGrounded && shouldApplyPlayerGravity(number, playerAttacking)) {
       playerVelocityY -= PLAYER_PROFILE.gravity * dt;
       playerY += playerVelocityY * dt;
@@ -358,6 +445,7 @@
         playerY = 0;
         playerVelocityY = 0;
         playerGrounded = true;
+        playerJumpsUsed = 0;
       }
     }
     draw();
@@ -370,9 +458,11 @@
     if (finished) return;
     if (key === keyBindings.left || key === "arrowleft") keys.left = true;
     if (key === keyBindings.right || key === "arrowright") keys.right = true;
-    if ((key === keyBindings.jump || key === "arrowup") && !event.repeat && playerGrounded && canPlayerJump(number)) {
+    if ((key === keyBindings.jump || key === "arrowup") && !event.repeat && canPlayerJump(number) && (playerGrounded || (number === 44 && playerJumpsUsed < 2))) {
       playerVelocityY = getPlayerJumpPower(number);
       playerGrounded = false;
+      if (number === 44) playerJumpsUsed++;
+      if (number === 4) attackWithWeapon("jump");
     }
     if (key === keyBindings.previous && !event.repeat) {
       cycleCharacter(-1);
