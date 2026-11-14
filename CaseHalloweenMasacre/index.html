@@ -12,12 +12,9 @@
     #GAME{position:relative;width:min(1280px,100vw);height:min(720px,100vh);overflow:hidden;border:2px solid #000;background:#181818;isolation:isolate}
     #BACKGROUND{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;z-index:0}
     #TREE{position:absolute;z-index:1;top:0;left:50%;height:100%;width:auto;transform:translateX(-50%);image-rendering:pixelated;pointer-events:none}
-    #TREE.hit{animation:tree-damage-flash .42s steps(1,end) 1}
-    @keyframes tree-damage-flash{0%,100%{opacity:1}25%,75%{opacity:.25}}
     #GROUND{position:absolute;z-index:2;left:0;right:0;bottom:0;height:90px;border-top:3px solid #57465d;background:#100e12 url("../Media/Images/Floor.png") repeat;background-size:64px 64px}
     .branch{display:none;position:absolute;z-index:3;top:0;height:100%;width:auto;transform:translateX(-50%) scaleY(-1);transform-origin:50% 50%;image-rendering:pixelated;pointer-events:none}
     .branch.active{z-index:5}
-    #BRANCH-WARNING{display:none;position:absolute;z-index:4;width:112px;height:140px;border:2px solid rgba(255,35,35,.28);background:rgba(255,0,0,.09);box-shadow:0 0 16px rgba(255,0,0,.12);transform:translateX(-50%);pointer-events:none}
     #PLAYER{position:absolute;z-index:6;left:0;bottom:90px;width:auto;height:auto;image-rendering:pixelated;transform-origin:center bottom;user-select:none;pointer-events:none}
     #PLAYER-PROJECTILE{position:absolute;z-index:7;width:auto;height:auto;image-rendering:pixelated;transform-origin:center bottom;pointer-events:none}
     #HUD{position:absolute;z-index:10;top:22px;left:22px;display:flex;align-items:center;gap:18px;pointer-events:none}
@@ -36,7 +33,6 @@
     <img id="BRANCH-LEFT" class="branch" src="../Media/Enemy/BloodTree/Branch.png" alt="">
     <img id="BRANCH-RIGHT" class="branch" src="../Media/Enemy/BloodTree/Branch.png" alt="">
     <div id="GROUND"></div>
-    <div id="BRANCH-WARNING" aria-hidden="true"></div>
     <img id="PLAYER" alt="Player">
     <img id="PLAYER-PROJECTILE" alt="" hidden>
     <div id="MESSAGE" aria-live="polite"></div>
@@ -52,12 +48,12 @@
   <script>
     const GAME=document.getElementById("GAME"),PLAYER=document.getElementById("PLAYER"),TREE=document.getElementById("TREE");
     const BRANCHES=[document.getElementById("BRANCH-LEFT"),document.getElementById("BRANCH-RIGHT")];
-    const WARNING=document.getElementById("BRANCH-WARNING"),PROJECTILE_IMAGE=document.getElementById("PLAYER-PROJECTILE");
+    const PROJECTILE_IMAGE=document.getElementById("PLAYER-PROJECTILE");
     const HEALTH=document.getElementById("HEALTH"),NUMBER_IMAGE=document.getElementById("NUMBER-IMAGE"),MESSAGE=document.getElementById("MESSAGE");
     const KEY_BINDINGS=loadPlayerBindings(),AVAILABLE_NUMBERS=new Set([-1,1,2,3,4,5,16,44]);
     const GROUND_HEIGHT=90,PLAYER_SCALE=PLAYER_PROFILE.scale,BRANCH_HEIGHT=GAME.clientHeight-GROUND_HEIGHT;
     const BRANCH_WIDTH=BRANCH_HEIGHT*177/1018+18;
-    const BRANCH_TRAVEL_TIME=.85,BRANCH_HOVER_TIME=.7,BRANCH_PLUNGE_TIME=.38,BRANCH_RETURN_TIME=.55;
+    const BRANCH_TRAVEL_TIME=.4,BRANCH_HOVER_TIME=.7,BRANCH_PLUNGE_TIME=.2,BRANCH_RETURN_TIME=.55;
     const BRANCH_GROUNDED_TIME=10,BRANCH_HIDDEN_TOP=-BRANCH_HEIGHT-12;
     const CASE_KEY="CaseHalloweenMasacre";
     const keys={left:false,right:false};
@@ -181,9 +177,6 @@
       const branch=BRANCHES[activeBranchIndex];
       branch.style.opacity=".35";
       window.setTimeout(()=>{branch.style.opacity="1"},90);
-      TREE.classList.remove("hit");
-      void TREE.offsetWidth;
-      TREE.classList.add("hit");
       if(branchHp===0)finishCase("victory",!saveCompletion());
     }
 
@@ -195,12 +188,6 @@
       if(hearts<=0)finishCase("defeat");
     }
 
-    function showWarning(){
-      WARNING.style.left=`${targetX}px`;
-      WARNING.style.top=`${GAME.clientHeight-GROUND_HEIGHT-150}px`;
-      WARNING.style.display="block";
-    }
-
     function signalAttack(){
       activeBranchIndex=nextBranchIndex;
       nextBranchIndex=1-nextBranchIndex;
@@ -209,7 +196,6 @@
       phaseTimer=3;
       branchHit=false;
       TREE.src="../Media/Enemy/BloodTree/TreeAGRO.png";
-      showWarning();
     }
 
     function beginBranchMotion(){
@@ -220,7 +206,6 @@
       branch.style.opacity="1";
       branch.style.display="block";
       placeBranch(branch,homeX(activeBranchIndex),BRANCH_HIDDEN_TOP);
-      WARNING.style.display="none";
       phase="FLOAT";
       phaseElapsed=0;
     }
