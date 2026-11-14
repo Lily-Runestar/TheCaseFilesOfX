@@ -140,7 +140,6 @@
   function damageBranch(amount) {
     if (phase !== "ATTACK" || branchHp <= 0) return;
     branchHp = Math.max(0, branchHp - amount);
-    updateBranchHealth();
     flashBranch();
     if (branchHp === 0) finishCase("victory", !saveCompletion());
   }
