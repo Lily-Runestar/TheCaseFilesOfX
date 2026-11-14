@@ -69,8 +69,8 @@ let projectile=null;
     function flashBoss(){let flashes=0;const pulse=()=>{if(flashes>=6){boss.style.opacity="1";return}boss.style.opacity=flashes++%2?"1":"0.25";window.setTimeout(pulse,90)};pulse()}
     function finishCase(result,text){finished=true;message.textContent=text;window.setTimeout(()=>window.location.href=`Exit.html?result=${result}`,1000)}
     function hurtPlayer(){if(finished||damageCooldown>0||playerInvulnerable>0)return;damageCooldown=.7;playerHealth--;drawHealth();if(playerHealth<=0)finishCase("defeat","DEFEATED")}
-    function unlockCharacter16(){try{const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");progress.characters=progress.characters||{};progress.characters["16"]="UNLOCKED";progress.cases=progress.cases||{};progress.cases.CaseChristmasNightmare="COMPLETED";localStorage.setItem("sixtySevenProgress",JSON.stringify(progress));localStorage.setItem("caseChristmasNightmareCompleted","true")}catch(error){console.error("Could not unlock Character 16",error)}}
-    function victory(){if(finished)return;unlockCharacter16();finishCase("victory","VICTORY — 16 UNLOCKED")}
+    function unlockCharacter16(){try{const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");progress.characters=progress.characters||{};progress.characters["16"]="UNLOCKED";progress.cases=progress.cases||{};progress.cases.CaseChristmasNightmare="COMPLETED";unlockPlayerSkin(progress,document.body.dataset.mode==="hell"?16:1,"Christmas");localStorage.setItem("sixtySevenProgress",JSON.stringify(progress));localStorage.setItem("caseChristmasNightmareCompleted","true")}catch(error){console.error("Could not unlock Christmas case rewards.",error)}}
+    function victory(){if(finished)return;unlockCharacter16();finishCase("victory","VICTORY")}
     let attackObjects=[];
     function clearAttackObjects(){for(const object of attackObjects)object.remove();attackObjects=[];meteor.style.display="none"}
     function createAttackImage(file){const image=document.createElement("img");image.className="attack-image";image.src=asset+file;game.appendChild(image);attackObjects.push(image);return image}
@@ -132,6 +132,7 @@ let projectile=null;
     function attackWithWeapon(kind="space"){
       if(finished||attackCooldown>0)return;
       if(number===5&&projectile){const recalled=getPlayerRecallPosition(number,projectile,{x:playerX,y:playerY});playerX=recalled.x;playerY=Math.max(0,recalled.y-78);playerGrounded=false;playerVelocityY=0;projectile=null;playerProjectile.style.display="none";return}
+      if(!tryStartPlayerAttack(number))return;
       facing=bossX>=playerX?1:-1;
       playerAttackKind=kind;playerAttacking=true;playerAttackElapsed=0;playerAttackHit=false;
       playerAttackAnimationTime=number===1?getPlayerActionDuration(1,"swing"):getPlayerActionDuration(number,number===-1||number===44?"dash":"swing");

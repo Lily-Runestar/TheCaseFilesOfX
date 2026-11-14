@@ -363,6 +363,7 @@ playerX=lastSafeX;playerY=lastSafeY;velocityY=0;velocityX=0;onGround=true;dashTi
 function START_ATTACK(){
   if(currentNumber===-1||currentNumber===44){
     if(dashTime>0)return;
+    if(!tryStartPlayerAttack(currentNumber))return;
     dashDirection=currentNumber===44&&keys.left!==keys.right?(keys.left?-1:1):facing;dashTime=0.24;if(currentNumber===-1)invulnerable=Math.max(invulnerable,0.5);
      if(currentNumber===44)velocityY=0;
     actionLocked=false;attacking=true;SET_ANIMATION("DASH",true,true);return

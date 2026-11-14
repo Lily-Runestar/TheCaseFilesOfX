@@ -172,7 +172,7 @@
   function finishCase(result, saveFailed = false) {
     if (finished) return;
     finished = true;
-    message.textContent = result === "victory" ? "THE BLOOD TREE HAS FALLEN" : "THE FOREST CLAIMS YOU";
+    message.textContent = result === "victory" ? "VICTORY" : "THE FOREST CLAIMS YOU";
     message.style.opacity = "1";
     window.setTimeout(() => {
       const query = new URLSearchParams({ result });
@@ -186,6 +186,13 @@
       const progress = JSON.parse(localStorage.getItem("sixtySevenProgress") || "{}");
       progress.cases = progress.cases || {};
       progress.cases[caseKey] = "COMPLETED";
+      if (hellMode) {
+        unlockPlayerSkin(progress, 44, "Halloween");
+      } else {
+        progress.characters = progress.characters || {};
+        progress.characters["44"] = "UNLOCKED";
+        unlockPlayerSkin(progress, 4, "Halloween");
+      }
       localStorage.setItem("sixtySevenProgress", JSON.stringify(progress));
       localStorage.setItem("caseHalloweenMasacreCompleted", "true");
       return true;
@@ -290,6 +297,7 @@
       return;
     }
 
+    if (!tryStartPlayerAttack(number)) return;
     facing = branchAttackTargetX() >= playerX ? 1 : -1;
     playerAttackKind = kind;
     playerAttacking = true;

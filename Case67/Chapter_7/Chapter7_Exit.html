@@ -138,6 +138,18 @@
         progress.characters = progress.characters || {};
         progress.chapters["7"] = "UNLOCKED";
         progress.completed = true;
+        let hellMode = false;
+        try {
+          hellMode = JSON.parse(localStorage.getItem("sixtySevenPlayerSettings") || "{}").hell === true;
+        } catch (error) {
+          console.warn("Player settings could not be read while saving Chapter 7.", error);
+        }
+        if (hellMode) {
+          progress.skins = progress.skins && typeof progress.skins === "object" ? progress.skins : {};
+          const number2Skins = progress.skins["2"];
+          progress.skins["2"] = number2Skins && typeof number2Skins === "object" ? number2Skins : {};
+          progress.skins["2"].Entity = "UNLOCKED";
+        }
         localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(progress));
         saveStatus.textContent = "";
         return true;

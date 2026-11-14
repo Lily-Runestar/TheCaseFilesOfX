@@ -10,24 +10,24 @@
     christmas: {
       normal: {
         intro: "12 days after Christmas, a darkness setled over the forest again. Heading inside, a tall figure stands, waiting...  -X",
-        victory: "The darkness lifts once more. The Christmas Nightmare is gone for now.  -X",
+        victory: "The case is complete. I can finally leave the forest.  -X",
         defeat: "By some miracle, life courses through my veins. But the Christmas Nightmare remains, waiting...  -X"
       },
       hell: {
         intro: "The forest is darker than before, and hiding at the center, a beast of unknown origin hides in the dark, smiling, looking for a kill...  -X",
-        victory: "The darkness lifts once more, this time for good, no poor people will die to this entity.  -X",
+        victory: "The case is complete. I can finally leave the forest.  -X",
         defeat: "The entity left me, enjoying the hunt too much to finish me off... \"Come back when you are stronger\".  -X"
       }
     },
     halloween: {
       normal: {
         intro: "Inside the forest I was told a tree was killing inocent people. So into this forest I shall go, to investigate further  -X",
-        victory: "The Blood Tree's eyes have gone dark. The branches fall still, and a path out of the forest opens. The murders are done.  -X",
+        victory: "The case is complete. I can finally leave the forest.  -X",
         defeat: "The forest closed around me as I ran. The tree's eyes remain fixed on the path.  -X"
       },
       hell: {
         intro: "The forest is soaked in blood, and the massacre has started up again. Something bloodsoaked is hiding and must be stopped.  -X",
-        victory: "The tree returned, covered in the blood, but it has been put to rest.  -X",
+        victory: "The case is complete. I can finally leave the forest.  -X",
         defeat: "The tree attempted to drag me down into the dirt, but I ran fast... But it is still there, waiting...  -X"
       }
     }

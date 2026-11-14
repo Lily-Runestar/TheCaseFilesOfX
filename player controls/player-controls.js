@@ -49,7 +49,31 @@ const DEFAULT_PLAYER_SETTINGS = Object.freeze({
   hell: false
 });
 
+function loadPlayerSkinUnlocks() {
+  try {
+    const progress = JSON.parse(localStorage.getItem("sixtySevenProgress") || "{}");
+    return progress.skins && typeof progress.skins === "object" ? progress.skins : {};
+  } catch (error) {
+    console.warn("Player skin unlocks could not be loaded.", error);
+    return {};
+  }
+}
+
+function isPlayerSkinUnlocked(number, skin, unlockedSkins = loadPlayerSkinUnlocks()) {
+  if (skin === "Standard") return true;
+  const characterSkins = unlockedSkins[String(number)];
+  return Boolean(characterSkins && typeof characterSkins === "object" && characterSkins[skin] === "UNLOCKED");
+}
+
+function unlockPlayerSkin(progress, number, skin) {
+  progress.skins = progress.skins && typeof progress.skins === "object" ? progress.skins : {};
+  const characterSkins = progress.skins[String(number)];
+  progress.skins[String(number)] = characterSkins && typeof characterSkins === "object" ? characterSkins : {};
+  progress.skins[String(number)][skin] = "UNLOCKED";
+}
+
 function loadPlayerSettings() {
+  const unlockedSkins = loadPlayerSkinUnlocks();
   try {
     const saved = JSON.parse(localStorage.getItem(PLAYER_SETTINGS_KEY) || "{}");
     const cycle = Array.isArray(saved.cycle) ? saved.cycle.filter((n) => [-1, 1, 2, 3, 4, 5, 16, 44].includes(n)) : [];
@@ -57,7 +81,9 @@ function loadPlayerSettings() {
     const skins = { ...DEFAULT_PLAYER_SETTINGS.skins };
     for (const number of Object.keys(PLAYER_SKINS)) {
       const savedSkin = savedSkins[number] ?? savedSkins[String(number)];
-      if (PLAYER_SKINS[number].includes(savedSkin)) skins[number] = savedSkin;
+      if (PLAYER_SKINS[number].includes(savedSkin) && isPlayerSkinUnlocked(number, savedSkin, unlockedSkins)) {
+        skins[number] = savedSkin;
+      }
     }
     return {
       cycle: cycle.length ? [...cycle] : [...DEFAULT_PLAYER_SETTINGS.cycle],
@@ -167,6 +193,16 @@ const PLAYER_MOVEMENT_LOCKS = Object.freeze({
   number1HitHold: 0.7,
   number4JumpLock: 0.36
 });
+
+let playerMinusOneAttackReadyAt = 0;
+
+function tryStartPlayerAttack(number) {
+  if (Number(number) !== -1) return true;
+  const now = performance.now();
+  if (now < playerMinusOneAttackReadyAt) return false;
+  playerMinusOneAttackReadyAt = now + 3000;
+  return true;
+}
 
 function getPlayerMovementLock(state = {}) {
   return {

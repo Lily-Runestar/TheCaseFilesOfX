@@ -530,6 +530,7 @@
         return;
       }
 
+      if (!tryStartPlayerAttack(currentNumber)) return;
       playerAttackTime = 0.001;
       playerAttackHit = false;
       playerAttackKind = kind;

@@ -544,6 +544,7 @@
     function START_ATTACK() {
       if (currentNumber === -1) {
         if (dashTime > 0) return;
+        if (!tryStartPlayerAttack(currentNumber)) return;
         dashDirection = facing;
         dashTime = 0.24;
         invulnerableTime = 0.5;

@@ -21,6 +21,9 @@
     }
     .skin.selected{background-image:url("Media/Buttons/Selected.png")}
     .skin img{position:absolute;left:50%;top:45%;width:165px;height:165px;object-fit:contain;transform:translate(-50%,-50%)}
+    .skin.locked{opacity:.5;cursor:not-allowed}
+    .skin.locked::after{content:"LOCKED";position:absolute;inset:auto 0 42px;text-align:center;font-weight:bold;text-shadow:0 2px #000}
+    .skin:disabled{cursor:not-allowed}
     #cycle{display:flex;justify-content:center;gap:10px;background:#181818;border-top:2px solid #777;padding:20px}
     #cycle button{width:95px;height:95px;background:#292929;border:2px solid #777;color:#fff;font-size:24px}
     #cycle button.exchange{border-color:#ffd700}
@@ -51,6 +54,7 @@
     }
     progress.characters = progress.characters || {};
     progress.characters["1"] = "UNLOCKED";
+    progress.skins = progress.skins && typeof progress.skins === "object" ? progress.skins : {};
 
     function isCharacterUnlocked(number) {
       return number === 1 || progress.characters[String(number)] === "UNLOCKED";
@@ -115,7 +119,12 @@
       (await skinFolders(number)).forEach((folder) => {
         const button = document.createElement("button");
         button.className = "skin";
+        const unlocked = isPlayerSkinUnlocked(number, folder, progress.skins);
         button.classList.toggle("selected", settings.skins[String(number)] === folder);
+        button.classList.toggle("locked", !unlocked);
+        button.disabled = !unlocked;
+        button.title = unlocked ? folder : "Complete the assigned case to unlock this skin.";
+        button.setAttribute("aria-label", `${folder} skin${unlocked ? "" : " (locked)"}`);
         button.innerHTML = '<img alt="">';
         const preview = button.querySelector("img");
         preview.src = `Media/Player/${number}/${folder}/${number}_Still.png`;
@@ -158,6 +167,9 @@
     function unlockAllCharacters() {
       const allCharacters = [-1, 1, 2, 3, 4, 5, 16, 44];
       allCharacters.forEach((number) => { progress.characters[String(number)] = "UNLOCKED"; });
+      for (const [number, skins] of Object.entries(PLAYER_SKINS)) {
+        skins.forEach((skin) => unlockPlayerSkin(progress, number, skin));
+      }
       try {
         localStorage.setItem("sixtySevenProgress", JSON.stringify(progress));
       } catch (error) {

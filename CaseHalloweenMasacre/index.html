@@ -187,7 +187,7 @@
     function finishCase(result,saveFailed=false){
       if(finished)return;
       finished=true;
-      MESSAGE.textContent=result==="victory"?"THE BLOOD TREE HAS FALLEN":"THE FOREST CLAIMS YOU";
+      MESSAGE.textContent=result==="victory"?"VICTORY":"THE FOREST CLAIMS YOU";
       MESSAGE.style.opacity="1";
       window.setTimeout(()=>{
         const query=new URLSearchParams({result});
@@ -201,6 +201,9 @@
         const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");
         progress.cases=progress.cases||{};
         progress.cases[CASE_KEY]="COMPLETED";
+        progress.characters=progress.characters||{};
+        progress.characters["44"]="UNLOCKED";
+        unlockPlayerSkin(progress,4,"Halloween");
         localStorage.setItem("sixtySevenProgress",JSON.stringify(progress));
         localStorage.setItem("caseHalloweenMasacreCompleted","true");
         return true;
@@ -333,6 +336,7 @@
         onGround=false;velocityY=0;projectile=null;PROJECTILE_IMAGE.hidden=true;PROJECTILE_IMAGE.style.display="none";
         return;
       }
+      if(!tryStartPlayerAttack(currentNumber))return;
       facing=branchAttackTargetX()>=playerX?1:-1;
       attackKind=kind;
       attacking=true;
