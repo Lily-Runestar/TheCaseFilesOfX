@@ -1,6 +1,11 @@
 @font-face {
-  font-family: Heading;
-  src: url("Media/Fonts/Heading.ttf") format("truetype");
+  font-family: Character;
+  src: url("Media/Fonts/Peeps.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: Entity;
+  src: url("Media/Fonts/Entity.ttf") format("truetype");
 }
 
 * {
@@ -10,52 +15,132 @@
 html,
 body {
   width: 100%;
-  min-height: 100%;
+  height: 100%;
   margin: 0;
-  background: #080808;
+  background: #000;
   color: #fff;
-  font-family: Heading, Arial, sans-serif;
 }
 
 body {
   display: grid;
   place-items: center;
-  padding: 24px;
+  overflow: hidden;
+  font-family: Character, sans-serif;
 }
 
 main {
-  width: min(100%, 900px);
   display: grid;
-  gap: 24px;
+  justify-items: center;
+  gap: 32px;
+  padding: 24px;
+  width: min(100%, 960px);
 }
 
-h1 {
-  margin: 0;
-  color: #d7d0bc;
-  font-size: clamp(32px, 7vw, 64px);
-  text-align: center;
-  text-shadow: 3px 3px #4c1717;
+main[data-screen="intro"] #story-title {
+  display: none;
 }
 
 #story-text {
+  width: 100%;
+  max-height: 70vh;
+  overflow-y: auto;
   margin: 0;
-  font: 20px/1.8 Arial, sans-serif;
+  font-size: clamp(16px, 2vw, 22px);
+  line-height: 1.8;
+  text-align: left;
   white-space: pre-line;
 }
 
-#story-action {
-  justify-self: center;
-  padding: 14px 28px;
-  border: 1px solid #978e7c;
+.button-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+#story-action,
+#story-fast {
+  padding: 16px 28px;
+  border: 0;
+  background: transparent;
   color: #fff;
-  background: #211d1a;
-  font: 20px Arial, sans-serif;
+  font: 32px Character, sans-serif;
   text-decoration: none;
+  cursor: pointer;
 }
 
 #story-action:hover,
-#story-action:focus-visible {
-  background: #492020;
-  outline: 2px solid #fff;
-  outline-offset: 3px;
+#story-action:focus-visible,
+#story-fast:hover,
+#story-fast:focus-visible {
+  outline: none;
+  text-shadow: 0 0 8px #fff, 0 0 18px #fff;
+}
+
+body.death-screen main {
+  width: 100%;
+  height: 100%;
+  gap: 0;
+  place-items: center;
+  animation: death-fade-in 900ms ease-out both;
+}
+
+@keyframes death-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+body.death-screen #story-title {
+  margin: 0;
+  font-family: Entity, sans-serif;
+  font-size: clamp(6rem, 24vw, 16rem);
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+body.death-screen #story-text {
+  display: none;
+}
+
+body.death-screen #story-action,
+body.death-screen #story-menu {
+  position: fixed;
+  min-width: 220px;
+  padding: 20px 36px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font: 40px Entity, sans-serif;
+  text-decoration: none;
+  text-shadow: none;
+  cursor: pointer;
+}
+
+body.death-screen #story-action {
+  left: 24px;
+  bottom: 24px;
+}
+
+body.death-screen #story-menu {
+  right: 24px;
+  bottom: 24px;
+}
+
+body.death-screen #story-action:hover,
+body.death-screen #story-action:focus-visible,
+body.death-screen #story-menu:hover,
+body.death-screen #story-menu:focus-visible {
+  background: transparent;
+  outline: none;
+  text-shadow: 0 0 8px #fff, 0 0 18px #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.death-screen main {
+    animation: none;
+  }
 }

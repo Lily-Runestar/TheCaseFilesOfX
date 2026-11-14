@@ -3,6 +3,8 @@
   const title = document.getElementById("story-title");
   const story = document.getElementById("story-text");
   const action = document.getElementById("story-action");
+  const fastButton = document.getElementById("story-fast");
+  const menuButton = document.getElementById("story-menu");
   const { case: caseName, variant, screen } = page.dataset;
   const name = caseName === "christmas" ? "Christmas Nightmare" : "Halloween Massacre";
   const variantName = variant === "hell" ? "Hell " : "";
@@ -27,21 +29,62 @@
   const outcome = stories[caseName][variant];
 
   if (screen === "intro") {
-    title.textContent = `${variantName}${name}`;
-    story.textContent = outcome.intro;
-    action.textContent = "Begin Case";
+    title.hidden = true;
+    story.textContent = "";
+    action.textContent = "Continue";
     action.href = `index.html${window.location.search}`;
     document.title = `${variantName}${name} — Introduction`;
+
+    const text = outcome.intro;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let index = 0;
+    let typingTimer;
+    let isFast = false;
+
+    function typeNextCharacter() {
+      if (index >= text.length) return;
+      story.textContent += text[index++];
+      if (index < text.length) {
+        const delay = text[index - 1] === "\n" ? 280 : 45;
+        typingTimer = window.setTimeout(typeNextCharacter, delay / (isFast ? 10 : 1));
+      }
+    }
+
+    if (reducedMotion) {
+      story.textContent = text;
+      index = text.length;
+    } else {
+      typeNextCharacter();
+    }
+    fastButton.addEventListener("click", () => {
+      isFast = true;
+      window.clearTimeout(typingTimer);
+      typeNextCharacter();
+    });
     return;
   }
 
   const won = new URLSearchParams(window.location.search).get("result") === "victory";
-  title.textContent = "";
+  if (!won) {
+    document.querySelector("body").classList.add("death-screen");
+    title.textContent = "YOU DIED";
+    story.hidden = true;
+    action.textContent = "Restart";
+    action.href = "index.html";
+    menuButton.hidden = false;
+    menuButton.textContent = "Main Menu";
+    menuButton.href = "../CaseSelection.html";
+    document.title = `${variantName}${name} — You Died`;
+    return;
+  }
+
+  title.hidden = true;
   story.textContent = "";
-  if (won && new URLSearchParams(window.location.search).get("save") === "failed") {
+  if (new URLSearchParams(window.location.search).get("save") === "failed") {
     story.textContent = "The case result could not be saved. Check browser storage and try again.";
   }
   action.textContent = "Return to Case Selection";
   action.href = "../CaseSelection.html";
+  menuButton.hidden = true;
   document.title = `${variantName}${name} — Conclusion`;
 })();

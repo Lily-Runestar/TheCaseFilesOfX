@@ -9,8 +9,11 @@
 <body>
   <main data-case="halloween" data-variant="normal" data-screen="intro">
     <h1 id="story-title"></h1>
-    <p id="story-text"></p>
-    <a id="story-action" href="index.html">Begin Case</a>
+    <p id="story-text" aria-live="polite"></p>
+    <div class="button-row">
+      <a id="story-action" href="index.html">Continue</a>
+      <button id="story-fast" type="button" aria-label="Display text 10 times faster">Fast</button>
+    </div>
   </main>
   <script src="../CaseStory.js"></script>
 </body>
