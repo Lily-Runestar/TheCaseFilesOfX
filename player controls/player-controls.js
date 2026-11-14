@@ -43,7 +43,7 @@ const PLAYER_SKINS = Object.freeze({
   "44": Object.freeze(["Standard", "Halloween"])
 });
 const DEFAULT_PLAYER_SETTINGS = Object.freeze({
-  cycle: [-1, 1, 2, 3, 4],
+  cycle: [1, 1, 1, 1, 1],
   skins: { "-1": "Standard", "1": "Standard", "2": "Standard", "3": "Standard", "4": "Standard", "5": "Standard", "16": "Standard", "44": "Standard" },
   difficulty: "easy",
   hell: false
@@ -77,6 +77,12 @@ function loadPlayerSettings() {
   try {
     const saved = JSON.parse(localStorage.getItem(PLAYER_SETTINGS_KEY) || "{}");
     const cycle = Array.isArray(saved.cycle) ? saved.cycle.filter((n) => [-1, 1, 2, 3, 4, 5, 16, 44].includes(n)) : [];
+    const legacyDefaultCycle = [-1, 1, 2, 3, 4];
+    const normalizedCycle = cycle.length === legacyDefaultCycle.length &&
+      cycle.every((number, index) => number === legacyDefaultCycle[index])
+      ? [...DEFAULT_PLAYER_SETTINGS.cycle]
+      : cycle.slice(0, 5);
+    while (normalizedCycle.length < 5) normalizedCycle.push(1);
     const savedSkins = saved.skins && typeof saved.skins === "object" ? saved.skins : {};
     const skins = { ...DEFAULT_PLAYER_SETTINGS.skins };
     for (const number of Object.keys(PLAYER_SKINS)) {
@@ -86,7 +92,7 @@ function loadPlayerSettings() {
       }
     }
     return {
-      cycle: cycle.length ? [...cycle] : [...DEFAULT_PLAYER_SETTINGS.cycle],
+      cycle: normalizedCycle,
       skins,
       difficulty: ["easy", "medium", "hard"].includes(saved.difficulty) ? saved.difficulty : "easy",
       hell: saved.hell === true

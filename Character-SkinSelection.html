@@ -142,7 +142,7 @@
     function renderCycle() {
       cycleElement.innerHTML = "";
       const displayedCycle = [...settings.cycle];
-      while (displayedCycle.length < 5) displayedCycle.push([1, 2, 3, 4, 5][displayedCycle.length]);
+      while (displayedCycle.length < 5) displayedCycle.push(1);
       displayedCycle.slice(0, 5).forEach((number, index) => {
         const button = document.createElement("button");
         addCharacterIcon(button, number);

@@ -62,7 +62,7 @@
     const FLOOR_Y=0,FLOOR_HEIGHT=78,PLAYER_WIDTH=44,PLAYER_HEIGHT=78,PLAYER_SCALE=.56,BOSS_SCALE=.62;
 
     const ANIMATION_DELAY=140;
-    let unlockedNumbers=[1],currentNumber=1;
+    let unlockedNumbers=[1],currentNumber=loadPlayerSettings().cycle[0]||1;
     let playerX=GAME.clientWidth*.15,playerY=0,playerVelocityY=0,playerGrounded=true,playerJumpsUsed=0;
     let playerHealth=getStartingHealth(),playerFacing=1,playerAnimation="STILL",playerFrame=0,playerAnimationTimer=0;
     let playerFlip=1;
@@ -86,8 +86,9 @@
         for(const [number,state] of Object.entries(progress.characters||{}))if(state==="UNLOCKED")unlocked.push(Number(number));
         if(localStorage.getItem("chapter1Completed")==="true")unlocked.push(2);
       }catch(error){console.warn("Saved character progress could not be read.",error)}
-      unlockedNumbers=AVAILABLE_NUMBERS.filter(number=>unlocked.includes(number));
-      setNumber(unlockedNumbers.includes(currentNumber)?currentNumber:1);
+      unlockedNumbers=getSelectedPlayableNumbers(unlocked).filter(number=>AVAILABLE_NUMBERS.includes(number));
+      if(!unlockedNumbers.includes(currentNumber))currentNumber=unlockedNumbers[0]||1;
+      setNumber(currentNumber);
     }
 
     function playerFrames(name){return getPlayerFrames(currentNumber,name=== "SWING"?"SWING":name=== "WALK"?"WALK":name,playerAttackKind)}
@@ -410,7 +411,7 @@
       for(let slot=1;slot<=5;slot++){
         if(!event.repeat&&key===keyBindings["number"+slot]){
           const cycle=loadPlayerSettings().cycle;
-          setNumber(cycle[slot-1]??[1,2,3,4,5][slot-1]);
+          if(cycle[slot-1]!==undefined)setNumber(cycle[slot-1]);
         }
       }
     });
@@ -424,7 +425,7 @@
     function start(){
       boss6X=GAME.clientWidth*.72;boss7X=GAME.clientWidth*.86;
       setBossFrame(boss6Element,6,"AltF1");setBossFrame(boss7Element,7,"AltF1");
-      setNumber(1);drawHealth();draw();requestAnimationFrame(gameLoop);
+      setNumber(unlockedNumbers[0]||1);drawHealth();draw();requestAnimationFrame(gameLoop);
       window.addEventListener("resize",()=>{boss6X=Math.min(boss6X,GAME.clientWidth-140);boss7X=Math.min(boss7X,GAME.clientWidth-60)});
     }
     loadUnlockedNumbers();start();

@@ -261,7 +261,7 @@
     const carriedHealth = Number(new URLSearchParams(window.location.search).get("hp"));
 
     let unlockedNumbers = [1];
-    let currentNumber = 1;
+    let currentNumber = loadPlayerSettings().cycle[0] || 1;
     let playerX = STAGE_WIDTH * 0.15;
     let playerY = FLOOR_Y;
     let playerVelocityY = 0;
@@ -317,7 +317,7 @@
         console.warn("Saved completion could not be read from browser storage.", error);
       }
       unlockedNumbers = getSelectedPlayableNumbers(unlocked);
-      if (!unlockedNumbers.includes(currentNumber)) currentNumber = 1;
+      if (!unlockedNumbers.includes(currentNumber)) currentNumber = unlockedNumbers[0] || 1;
       setPlayerFrame(PLAYER_ANIMATIONS[playerAnimation][playerFrame] || "Still");
       setNumber(currentNumber);
     }
@@ -986,7 +986,7 @@
       for (let slot = 1; slot <= 5; slot++) {
         if (!event.repeat && key === keyBindings[`number${slot}`]) {
           const cycle = loadPlayerSettings().cycle;
-          setNumber(cycle[slot - 1] ?? [1, 2, 3, 4, 5][slot - 1]);
+          if(cycle[slot - 1]!==undefined)setNumber(cycle[slot - 1]);
         }
       }
     });

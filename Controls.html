@@ -231,6 +231,7 @@
       localStorage.removeItem("sixtySevenProgress");
       localStorage.removeItem("chapter1Completed");
       const settings = loadPlayerSettings();
+      settings.cycle = [1, 1, 1, 1, 1];
       settings.hell = false;
       savePlayerSettings(settings);
       status.textContent = "Case progress reset.";

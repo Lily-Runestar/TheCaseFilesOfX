@@ -17,7 +17,7 @@
   const branchLingerDuration = 10;
   const attackDuration = branchTravelDuration + branchLingerDuration;
   let playableNumbers = [1];
-  let number = 1;
+  let number = loadPlayerSettings().cycle[0] || 1;
   let playerX = 120;
   let playerY = 0;
   let playerVelocityY = 0;
@@ -53,10 +53,18 @@
 
   function loadCharacters() {
     const available = new Set([-1, 1, 2, 3, 4, 5, 16, 44]);
-    playableNumbers = [...new Set(loadPlayerSettings().cycle.filter((character) => available.has(character)))];
-    if (!playableNumbers.includes(1)) playableNumbers.unshift(1);
+    const unlocked = [1];
+    try {
+      const progress = JSON.parse(localStorage.getItem("sixtySevenProgress") || "{}");
+      for (const [character, status] of Object.entries(progress.characters || {})) {
+        if (status === "UNLOCKED") unlocked.push(Number(character));
+      }
+    } catch (error) {
+      console.warn("Saved characters could not be read.", error);
+    }
+    playableNumbers = getSelectedPlayableNumbers(unlocked).filter((character) => available.has(character));
     if (!playableNumbers.length) playableNumbers = [1];
-    if (!playableNumbers.includes(number)) number = playableNumbers[0];
+    number = playableNumbers[0];
   }
 
   function drawHealth() {

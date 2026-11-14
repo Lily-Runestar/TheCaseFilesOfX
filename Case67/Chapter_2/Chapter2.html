@@ -74,7 +74,7 @@ const GAME=document.getElementById("GAME"), WORLD=document.getElementById("WORLD
 
 const numberImage=document.getElementById("NUMBER-IMAGE"), healthEl=document.getElementById("HEALTH"), messageEl=document.getElementById("MESSAGE");
 
-let unlockedNumbers=[1],currentNumber=1;
+let unlockedNumbers=[1],currentNumber=loadPlayerSettings().cycle[0]||1;
 
 const ANIMATION_SPEED=140, NUMBER_1_SWING_HOLD=350;
 
@@ -227,7 +227,7 @@ function SET_NUMBER(n){if(!unlockedNumbers.includes(n))return;currentNumber=n;nu
 
 function LOAD_UNLOCKED_NUMBERS(){const out=[1];try{const saved=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");for(const [number,status] of Object.entries(saved.characters||{})){if(status==="UNLOCKED")out.push(Number(number))}if(localStorage.getItem("chapter1Completed")==="true")out.push(2)}catch(e){console.warn("Saved character progress could not be read from browser storage.",e)}return getSelectedPlayableNumbers(out)}
 
-async function LOAD_COMPLETION_STATE(){unlockedNumbers=LOAD_UNLOCKED_NUMBERS();if(!unlockedNumbers.includes(currentNumber))currentNumber=1;SET_NUMBER(currentNumber);return true}
+async function LOAD_COMPLETION_STATE(){unlockedNumbers=LOAD_UNLOCKED_NUMBERS();if(!unlockedNumbers.includes(currentNumber))currentNumber=unlockedNumbers[0]||1;SET_NUMBER(currentNumber);return true}
 
 async function CHANGE_NUMBER(dir){if(actionLocked)return;await LOAD_COMPLETION_STATE();if(unlockedNumbers.length<2)return;const i=unlockedNumbers.indexOf(currentNumber);SET_NUMBER(unlockedNumbers[(i+dir+unlockedNumbers.length)%unlockedNumbers.length])}
 
@@ -386,7 +386,7 @@ document.addEventListener("keydown",e=>{const k=e.key.toLowerCase();if(["arrowle
 
  if(k===KEY_BINDINGS.attack&&!e.repeat)START_ATTACK();
 
- if(k===KEY_BINDINGS.previous&&!e.repeat)CHANGE_NUMBER(-1);if(k===KEY_BINDINGS.next&&!e.repeat)CHANGE_NUMBER(1);for(let i=1;i<=5;i++){if(!e.repeat&&k===KEY_BINDINGS["number"+i]){const cycle=loadPlayerSettings().cycle;SET_NUMBER(cycle[i-1]??[1,2,3,4,5][i-1]);}}
+ if(k===KEY_BINDINGS.previous&&!e.repeat)CHANGE_NUMBER(-1);if(k===KEY_BINDINGS.next&&!e.repeat)CHANGE_NUMBER(1);for(let i=1;i<=5;i++){if(!e.repeat&&k===KEY_BINDINGS["number"+i]){const cycle=loadPlayerSettings().cycle;if(cycle[i-1]!==undefined)SET_NUMBER(cycle[i-1]);}}
 });
 
 document.addEventListener("keyup",e=>{const k=e.key.toLowerCase();if(k===KEY_BINDINGS.left||k==="arrowleft")keys.left=false;if(k===KEY_BINDINGS.right||k==="arrowright")keys.right=false});

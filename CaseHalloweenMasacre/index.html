@@ -57,7 +57,7 @@
     const BRANCH_GROUNDED_TIME=10,BRANCH_HIDDEN_TOP=-BRANCH_HEIGHT-12;
     const CASE_KEY="CaseHalloweenMasacre";
     const keys={left:false,right:false};
-    let playableNumbers=[],currentNumber=1,playerX=130,playerY=0,velocityY=0,onGround=true,facing=1;
+    let playableNumbers=[],currentNumber=loadPlayerSettings().cycle[0]||1,playerX=130,playerY=0,velocityY=0,onGround=true,facing=1;
     let attacking=false,attackCooldown=0,number1Hold=0,damageCooldown=0,hearts=getStartingHealth(),projectile=null;
     let attackElapsed=0,attackHit=false,attackKind="space",attackAnimationTime=0;
     let playerDashTime=0,playerDashDirection=1,playerDashHit=false,playerInvulnerable=0,playerJumpsUsed=0;
@@ -66,10 +66,14 @@
     let branchHit=false,branchHp=100,finished=false,lastTime=performance.now();
 
     function loadCharacters(){
-      playableNumbers=[...new Set(loadPlayerSettings().cycle.filter(number=>AVAILABLE_NUMBERS.has(number)))];
-      if(!playableNumbers.includes(1))playableNumbers.unshift(1);
+      const unlocked=[1];
+      try{
+        const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");
+        for(const [number,status] of Object.entries(progress.characters||{}))if(status==="UNLOCKED")unlocked.push(Number(number));
+      }catch(error){console.warn("Saved characters could not be read.",error)}
+      playableNumbers=getSelectedPlayableNumbers(unlocked).filter(number=>AVAILABLE_NUMBERS.has(number));
       if(!playableNumbers.length)playableNumbers=[1];
-      if(!playableNumbers.includes(currentNumber))currentNumber=playableNumbers[0];
+      currentNumber=playableNumbers[0];
     }
 
     function setNumber(number){

@@ -185,7 +185,7 @@
     const numberImage = document.getElementById("NUMBER-IMAGE");
 
     let unlockedNumbers = [1];
-    let currentNumber = 1;
+    let currentNumber = loadPlayerSettings().cycle[0] || 1;
 
     // ANIMATION
     const ANIMATION_SPEED = 140;
@@ -426,7 +426,7 @@
     async function LOAD_COMPLETION_STATE() {
       unlockedNumbers = LOAD_UNLOCKED_NUMBERS();
       if (!unlockedNumbers.includes(currentNumber)) {
-        currentNumber = 1;
+        currentNumber = unlockedNumbers[0] || 1;
       }
       SET_NUMBER(currentNumber);
       return true;

@@ -37,7 +37,7 @@
     const game=document.getElementById("game"),player=document.getElementById("player"),boss=document.getElementById("boss");
     const meteor=document.getElementById("meteor"),playerProjectile=document.getElementById("PLAYER-PROJECTILE"),health=document.getElementById("health"),message=document.getElementById("message");
     const keys={left:false,right:false},asset="../Media/Enemy/NicholasRenegade/",keyBindings=loadPlayerBindings();
-    let unlockedNumbers=[1],number=1,playerX=120,playerY=0,playerVelocityY=0,playerGrounded=true,playerYVelocity=0,playerAttacking=false,attackCooldown=0,damageCooldown=0,number1Hold=0;
+    let unlockedNumbers=[1],number=loadPlayerSettings().cycle[0]||1,playerX=120,playerY=0,playerVelocityY=0,playerGrounded=true,playerYVelocity=0,playerAttacking=false,attackCooldown=0,damageCooldown=0,number1Hold=0;
     let playerAttackElapsed=0,playerAttackHit=false,playerAttackKind="space",playerAttackAnimationTime=0;
     let playerDashTime=0,playerDashDirection=1,playerDashHit=false,playerInvulnerable=0,playerJumpsUsed=0;
     let playerFlip=1,fourFlipState="",fourFlipTimer=0;
@@ -47,7 +47,7 @@ let projectile=null;
     for(const file of ["Blue.png","Red.png","Yellow.png","Purple.png","Still.png","Travel.png","Present.png","Sled.png","Meteor.png","Boom.png"]){const image=new Image();image.src=asset+file}
     function christmasPlayerSprite(character,frame){return playerSpritePath(character,frame)}
     for(const character of [-1,1,2,3,4,5,16,44])for(const frame of ["Still","Walk","WalkF1","WalkF2","WalkAlt","StillAlt","Jump","Fall","TravelF1","TravelF2","ThrowF1","ThrowF2","SwingF1","SwingF2","Swing","Release","Sweep","Charge","Bomb","Explode"]){const image=new Image();image.src=christmasPlayerSprite(character,frame)}
-    function loadCharacters(){const unlocked=[1];try{const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");for(const [character,status] of Object.entries(progress.characters||{}))if(status=== "UNLOCKED")unlocked.push(Number(character))}catch(error){console.warn("Saved characters could not be read.",error)}unlockedNumbers=getSelectedPlayableNumbers(unlocked);if(!unlockedNumbers.includes(number))number=unlockedNumbers[0]||1}
+    function loadCharacters(){const unlocked=[1];try{const progress=JSON.parse(localStorage.getItem("sixtySevenProgress")||"{}");for(const [character,status] of Object.entries(progress.characters||{}))if(status=== "UNLOCKED")unlocked.push(Number(character))}catch(error){console.warn("Saved characters could not be read.",error)}unlockedNumbers=getSelectedPlayableNumbers(unlocked);number=unlockedNumbers[0]||1}
     function setNumber(character){if(!unlockedNumbers.includes(character))return;if(character!==number){projectile=null;playerProjectile.style.display="none";playerAttacking=false;attackCooldown=0;number1Hold=0;playerAttackAnimationTime=0;playerDashTime=0;fourFlipState="";playerFlip=1;fourFlipTimer=0}number=character;draw()}
     function drawHealth(){health.replaceChildren();for(let i=0;i<getStartingHealth();i++){const heart=document.createElement("img");heart.className="heart";heart.src="../Media/Images/Heart.png";heart.alt=i<playerHealth?"Heart":"Empty heart";heart.style.opacity=i<playerHealth?"1":".2";health.appendChild(heart)}}
     function playerFrame(){
@@ -173,7 +173,7 @@ let projectile=null;
       if((key===keyBindings.jump||key==="arrowup")&&!e.repeat&&canPlayerJump(number)&&(playerGrounded||(number===44&&playerJumpsUsed<2))){playerVelocityY=getPlayerJumpPower(number);playerGrounded=false;if(number===44)playerJumpsUsed++;if(number===4)attackWithWeapon("jump")}
       if(key===keyBindings.previous&&!e.repeat&&unlockedNumbers.length>1){const index=unlockedNumbers.indexOf(number);setNumber(unlockedNumbers[(index-1+unlockedNumbers.length)%unlockedNumbers.length])}
       if(key===keyBindings.next&&!e.repeat&&unlockedNumbers.length>1){const index=unlockedNumbers.indexOf(number);setNumber(unlockedNumbers[(index+1)%unlockedNumbers.length])}
-      for(let slot=1;slot<=5;slot++)if(key===keyBindings[`number${slot}`]&&!e.repeat){const cycle=loadPlayerSettings().cycle;setNumber(cycle[slot-1]??[1,2,3,4,5][slot-1])}
+      for(let slot=1;slot<=5;slot++)if(key===keyBindings[`number${slot}`]&&!e.repeat){const cycle=loadPlayerSettings().cycle;if(cycle[slot-1]!==undefined)setNumber(cycle[slot-1])}
       if(key===keyBindings.attack&&!e.repeat&&attackCooldown<=0)attackWithWeapon()
     });
     addEventListener("keyup",e=>{const key=e.key.toLowerCase();if(key===keyBindings.left||key==="arrowleft")keys.left=false;if(key===keyBindings.right||key==="arrowright")keys.right=false});
