@@ -12,8 +12,10 @@
     #GAME{position:relative;width:min(1280px,100vw);height:min(720px,100vh);overflow:hidden;border:2px solid #000;background:#181818;isolation:isolate}
     #BACKGROUND{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;z-index:0}
     #TREE{position:absolute;z-index:1;top:0;left:50%;height:100%;width:auto;transform:translateX(-50%);image-rendering:pixelated;pointer-events:none}
+    #TREE.hit{animation:tree-damage-flash .42s steps(1,end) 1}
+    @keyframes tree-damage-flash{0%,100%{opacity:1}25%,75%{opacity:.25}}
     #GROUND{position:absolute;z-index:2;left:0;right:0;bottom:0;height:90px;border-top:3px solid #57465d;background:#100e12 url("../Media/Images/Floor.png") repeat;background-size:64px 64px}
-    .branch{position:absolute;z-index:3;top:-96px;height:320px;width:auto;transform:translateX(-50%) scaleY(-1);transform-origin:50% 0;image-rendering:pixelated;pointer-events:none}
+    .branch{position:absolute;z-index:3;top:-96px;height:320px;width:auto;transform:translateX(-50%) scaleY(-1);transform-origin:50% 50%;image-rendering:pixelated;pointer-events:none}
     .branch.active{z-index:5}
     #BRANCH-WARNING{display:none;position:absolute;z-index:4;width:112px;height:140px;border:2px solid rgba(255,35,35,.28);background:rgba(255,0,0,.09);box-shadow:0 0 16px rgba(255,0,0,.12);transform:translateX(-50%);pointer-events:none}
     #PLAYER{position:absolute;z-index:6;left:0;bottom:90px;width:auto;height:auto;image-rendering:pixelated;transform-origin:center bottom;user-select:none;pointer-events:none}
@@ -178,6 +180,9 @@
       const branch=BRANCHES[activeBranchIndex];
       branch.style.opacity=".35";
       window.setTimeout(()=>{branch.style.opacity="1"},90);
+      TREE.classList.remove("hit");
+      void TREE.offsetWidth;
+      TREE.classList.add("hit");
       if(branchHp===0)finishCase("victory",!saveCompletion());
     }
 
@@ -261,7 +266,7 @@
         if(progress>=1){
           branch.classList.remove("active");
           placeBranch(branch,startX,-96);
-          branch.style.height="320px";
+          branch.style.height=`${BRANCH_HEIGHT}px`;
           activeBranchIndex=-1;
           TREE.src="../Media/Enemy/BloodTree/Tree.png";
           phase="REST";
